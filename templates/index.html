@@ -8,9 +8,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0f14;
-            color: #e4e6eb;
-            padding: 16px;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 20px;
         }
         .container { max-width: 500px; margin: 0 auto; }
         .header {
@@ -20,24 +20,32 @@
             margin-bottom: 24px;
         }
         .logo {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: 600;
-            background: linear-gradient(135deg, #2277ff, #00c2ff);
+            background: linear-gradient(135deg, #89b4fa, #cba6f7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
         .status-badge {
-            background: rgba(46,204,113,0.15);
-            color: #2ecc71;
+            background: #313244;
+            color: #a6e3a1;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 13px;
+            border: 1px solid #45475a;
         }
         .card {
-            background: #1a1f26;
+            background: #181825;
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 16px;
+            border: 1px solid #313244;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #89b4fa;
         }
         .menu-grid {
             display: grid;
@@ -46,36 +54,39 @@
             margin-bottom: 16px;
         }
         button {
-            background: linear-gradient(135deg, #2277ff, #00c2ff);
-            color: white;
+            background: #89b4fa;
+            color: #1e1e2e;
             border: none;
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 14px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             width: 100%;
             margin-bottom: 8px;
+            transition: opacity 0.2s;
         }
-        button.secondary { background: #262f3d; }
-        button.danger { background: #ff4757; }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: #45475a; color: #cdd6f4; }
+        button.danger { background: #f38ba8; color: #1e1e2e; }
         .form-group { margin-bottom: 16px; }
         .form-label {
             display: flex;
             justify-content: space-between;
             margin-bottom: 6px;
-            color: #9aa6b8;
-            font-size: 13px;
+            color: #a6adc8;
+            font-size: 14px;
         }
         input, select {
             width: 100%;
-            padding: 14px;
-            background: #0f151c;
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            color: white;
+            padding: 12px;
+            background: #313244;
+            border: 1px solid #45475a;
+            border-radius: 8px;
+            color: #cdd6f4;
             font-size: 15px;
         }
+        input::placeholder { color: #6c7086; }
         .interval-row {
             display: flex;
             gap: 8px;
@@ -85,20 +96,21 @@
         .back-button {
             background: none;
             border: none;
-            color: #9aa6b8;
+            color: #89b4fa;
             margin-bottom: 16px;
             text-align: left;
             padding: 0;
+            font-size: 14px;
         }
         .alert.error {
-            background: rgba(255,71,87,0.1);
-            color: #ff4757;
+            background: #f38ba8;
+            color: #1e1e2e;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 8px;
             margin-bottom: 16px;
         }
         .pair-item {
-            background: #0f151c;
+            background: #313244;
             border-radius: 12px;
             padding: 14px;
             margin-bottom: 10px;
@@ -115,18 +127,18 @@
             gap: 8px;
         }
         .pair-badge {
-            background: #1e293b;
+            background: #45475a;
             padding: 4px 8px;
-            border-radius: 20px;
+            border-radius: 12px;
             font-size: 11px;
-            color: #9aa6b8;
+            color: #a6adc8;
         }
         .pair-details {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             font-size: 13px;
-            color: #9aa6b8;
+            color: #a6adc8;
             margin-bottom: 8px;
         }
         .pair-actions {
@@ -137,18 +149,18 @@
         .icon-button {
             width: 36px;
             height: 36px;
-            border-radius: 10px;
-            background: #1e293b;
+            border-radius: 8px;
+            background: #45475a;
             border: none;
-            color: white;
+            color: #cdd6f4;
             cursor: pointer;
             margin: 0;
         }
-        .icon-button.delete { background: rgba(255,71,87,0.1); color: #ff4757; }
+        .icon-button.delete { background: #f38ba8; color: #1e1e2e; }
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: #5f6b7a;
+            color: #6c7086;
         }
     </style>
 </head>
@@ -156,7 +168,7 @@
     <div class="container">
         <div class="header">
             <span class="logo">📊 CryptoMonitor</span>
-            <span class="status-badge"><span style="width:8px;height:8px;background:#2ecc71;border-radius:50%;display:inline-block;margin-right:4px;"></span>Live</span>
+            <span class="status-badge">🟢 Live</span>
         </div>
 
         <div id="mainMenu">
@@ -170,28 +182,28 @@
         <div id="addForm" style="display: none;">
             <button class="back-button" onclick="showMainMenu()">← Назад</button>
             <div class="card">
-                <div style="font-size:16px;font-weight:600;margin-bottom:16px;">📈 Новая пара</div>
+                <div class="card-title">📈 Новая пара</div>
                 <div id="formError" class="alert error" style="display: none;"></div>
                 
                 <div class="form-group">
                     <div class="form-label">Первый тикер</div>
-                    <input type="text" id="symbol1" placeholder="btcusdt" value="paxgusdt">
+                    <input type="text" id="symbol1" placeholder="например: paxgusdt">
                 </div>
                 
                 <div class="form-group">
                     <div class="form-label">Второй тикер</div>
-                    <input type="text" id="symbol2" placeholder="ethusdt" value="xautusdt">
+                    <input type="text" id="symbol2" placeholder="например: xautusdt">
                 </div>
                 
                 <div class="form-group">
                     <div class="form-label">Порог</div>
-                    <input type="number" id="threshold" step="0.0001" value="1.0">
+                    <input type="number" id="threshold" step="0.0001" value="1.0048" placeholder="1.0048">
                 </div>
 
                 <div class="form-group">
                     <div class="form-label">Интервал</div>
                     <div class="interval-row">
-                        <input type="number" id="interval_value" min="1" value="1">
+                        <input type="number" id="interval_value" min="1" value="1" placeholder="1">
                         <select id="interval_unit">
                             <option value="minute">мин</option>
                             <option value="hour">ч</option>
@@ -209,65 +221,29 @@
         <div id="pairsList" style="display: none;">
             <button class="back-button" onclick="showMainMenu()">← Назад</button>
             <div class="card">
-                <div style="font-size:16px;font-weight:600;margin-bottom:16px;">📋 Мои пары</div>
+                <div class="card-title">📋 Мои пары</div>
                 <div id="pairsContainer" class="empty-state">📭 Нет сохраненных пар</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== ПРИНУДИТЕЛЬНОЕ ПОЛУЧЕНИЕ CHAT ID =====
-        let chatId = 1; // Значение по умолчанию
-        
-        // Пытаемся получить Telegram WebApp
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
+        let tg = window.Telegram?.WebApp;
+        let chatId = 1;
+
+        if (tg) {
             tg.ready();
             tg.expand();
-            
-            // Получаем ID пользователя
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            if (tg.initDataUnsafe?.user?.id) {
                 chatId = tg.initDataUnsafe.user.id;
-                console.log('✅ Реальный Chat ID:', chatId);
-                
-                // Показываем уведомление об успехе
-                const statusDiv = document.createElement('div');
-                statusDiv.style.position = 'fixed';
-                statusDiv.style.top = '10px';
-                statusDiv.style.left = '10px';
-                statusDiv.style.background = '#27ae60';
-                statusDiv.style.color = 'white';
-                statusDiv.style.padding = '8px 12px';
-                statusDiv.style.borderRadius = '8px';
-                statusDiv.style.fontSize = '12px';
-                statusDiv.style.zIndex = '9999';
-                statusDiv.innerHTML = `✅ ID: ${chatId}`;
-                document.body.appendChild(statusDiv);
-                
-                // Убираем через 3 секунды
-                setTimeout(() => statusDiv.remove(), 3000);
-            } else {
-                console.log('❌ Нет данных пользователя');
-                // Показываем предупреждение
-                const warnDiv = document.createElement('div');
-                warnDiv.style.position = 'fixed';
-                warnDiv.style.top = '10px';
-                warnDiv.style.left = '10px';
-                warnDiv.style.background = '#e74c3c';
-                warnDiv.style.color = 'white';
-                warnDiv.style.padding = '8px 12px';
-                warnDiv.style.borderRadius = '8px';
-                warnDiv.style.fontSize = '12px';
-                warnDiv.style.zIndex = '9999';
-                warnDiv.innerHTML = '❌ Нет данных пользователя. Используется ID 1';
-                document.body.appendChild(warnDiv);
-                setTimeout(() => warnDiv.remove(), 3000);
+                console.log("✅ Chat ID:", chatId);
+                fetch('/api/log_chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({chatId})
+                });
             }
-        } else {
-            console.log('❌ Telegram WebApp не найден');
         }
-
-        console.log('🆔 Итоговый Chat ID:', chatId);
 
         function showMainMenu() {
             document.getElementById('mainMenu').style.display = 'block';
@@ -291,11 +267,12 @@
         function showError(msg) {
             const errorDiv = document.getElementById('formError');
             errorDiv.style.display = 'block';
-            errorDiv.innerHTML = `⚠️ ${msg}`;
+            errorDiv.textContent = `⚠️ ${msg}`;
             setTimeout(() => errorDiv.style.display = 'none', 3000);
         }
 
         function formatInterval(value, unit) {
+            const names = {minute:'мин', hour:'ч', day:'дн', week:'нед', month:'мес'};
             if (value === 1) {
                 if (unit === 'minute') return '1 минуту';
                 if (unit === 'hour') return '1 час';
@@ -303,7 +280,6 @@
                 if (unit === 'week') return '1 неделю';
                 if (unit === 'month') return '1 месяц';
             }
-            const names = {minute:'мин', hour:'ч', day:'дн', week:'нед', month:'мес'};
             return `${value} ${names[unit]}`;
         }
 
@@ -358,22 +334,13 @@
                 const res = await fetch('/api/add_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        chatId: chatId,
-                        symbol1: s1,
-                        symbol2: s2,
-                        threshold: th,
-                        interval_value: iv,
-                        interval_unit: iu
-                    })
+                    body: JSON.stringify({chatId, symbol1: s1, symbol2: s2, threshold: th, interval_value: iv, interval_unit: iu})
                 });
                 const data = await res.json();
                 if (data.error) showError(data.error);
                 else {
                     showMainMenu();
-                    if (window.Telegram?.WebApp) {
-                        window.Telegram.WebApp.showAlert('✅ Пара добавлена!');
-                    }
+                    if (tg) tg.showAlert('✅ Пара добавлена!');
                 }
             } catch (e) {
                 showError('Ошибка: ' + e);
@@ -381,33 +348,16 @@
         }
 
         async function removePair(pairId) {
-            if (window.Telegram?.WebApp) {
-                window.Telegram.WebApp.showConfirm('Удалить пару?', async (confirmed) => {
-                    if (confirmed) {
-                        try {
-                            await fetch('/api/remove_pair', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({chatId, pairId})
-                            });
-                            await loadPairs();
-                        } catch (e) {
-                            showError('Ошибка: ' + e);
-                        }
-                    }
-                });
-            } else {
-                if (confirm('Удалить пару?')) {
-                    try {
-                        await fetch('/api/remove_pair', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({chatId, pairId})
-                        });
-                        await loadPairs();
-                    } catch (e) {
-                        showError('Ошибка: ' + e);
-                    }
+            if (!tg || confirm('Удалить пару?')) {
+                try {
+                    await fetch('/api/remove_pair', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({chatId, pairId})
+                    });
+                    await loadPairs();
+                } catch (e) {
+                    showError('Ошибка: ' + e);
                 }
             }
         }
@@ -426,33 +376,16 @@
         }
 
         async function stopAll() {
-            if (window.Telegram?.WebApp) {
-                window.Telegram.WebApp.showConfirm('Остановить все мониторы?', async (confirmed) => {
-                    if (confirmed) {
-                        try {
-                            await fetch('/api/stop_all', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({chatId})
-                            });
-                            window.Telegram.WebApp.showAlert('⏹ Все остановлено');
-                        } catch (e) {
-                            showError('Ошибка: ' + e);
-                        }
-                    }
-                });
-            } else {
-                if (confirm('Остановить все мониторы?')) {
-                    try {
-                        await fetch('/api/stop_all', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({chatId})
-                        });
-                        alert('⏹ Все остановлено');
-                    } catch (e) {
-                        showError('Ошибка: ' + e);
-                    }
+            if (!tg || confirm('Остановить все мониторы?')) {
+                try {
+                    await fetch('/api/stop_all', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({chatId})
+                    });
+                    if (tg) tg.showAlert('⏹ Все остановлено');
+                } catch (e) {
+                    showError('Ошибка: ' + e);
                 }
             }
         }
