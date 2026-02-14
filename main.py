@@ -293,12 +293,13 @@ def run_flask():
 def main():
     logging.info("🚀 Запуск...")
     
-    # Запускаем Flask
+    # Запускаем Flask в отдельном потоке
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
     
-    # Создаем бота
+    # Создаем и запускаем бота в ОСНОВНОМ потоке
+    logging.info("🤖 Создание бота...")
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
     
     # Добавляем обработчики
@@ -306,8 +307,10 @@ def main():
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_error_handler(error_handler)
     
-    logging.info("✅ Бот готов")
-    app.run_polling()
+    logging.info("✅ Бот готов, запускаем polling...")
+    
+    # Запускаем polling (этот вызов БЛОКИРУЕТ поток)
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
     main()
