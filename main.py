@@ -1,13 +1,11 @@
 import logging
 import os
-import asyncio
 import requests
-from datetime import datetime, timedelta
-import traceback
 import threading
 import time
 import json
-
+import traceback
+from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, render_template
 
 # ===== НАСТРОЙКИ =====
@@ -21,9 +19,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 app = Flask(__name__)
 monitors = {}
 
-# ===== ФУНКЦИИ =====
+# ===== ФУНКЦИЯ ОТПРАВКИ (РАБОЧАЯ) =====
 def send_telegram(chat_id, text, keyboard=None):
-    """Прямая отправка в Telegram"""
+    """Отправляет сообщение в Telegram"""
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     data = {
         'chat_id': chat_id,
@@ -35,12 +33,72 @@ def send_telegram(chat_id, text, keyboard=None):
     try:
         response = requests.post(url, json=data, timeout=10)
         if response.status_code == 200:
-            logging.info(f"✅ Отправлено в {chat_id}")
+            logging.info(f"✅ Сообщение отправлено в чат {chat_id}")
+            return True
         else:
-            logging.error(f"❌ Ошибка: {response.text}")
+            logging.error(f"❌ Ошибка Telegram: {response.text}")
+            return False
     except Exception as e:
-        logging.error(f"❌ Ошибка: {e}")
+        logging.error(f"❌ Ошибка отправки: {e}")
+        return False
 
+# ===== POLLING (РАБОЧИЙ) =====
+def polling():
+    """Проверяет новые сообщения"""
+    offset = 0
+    while True:
+        try:
+            response = requests.get(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
+                params={'offset': offset, 'timeout': 30}
+            )
+            data = response.json()
+            
+            if data['ok'] and data['result']:
+                for update in data['result']:
+                    offset = update['update_id'] + 1
+                    
+                    if 'message' in update:
+                        chat_id = update['message']['chat']['id']
+                        text = update['message'].get('text', '')
+                        
+                        logging.info(f"📨 От {chat_id}: {text}")
+                        
+                        if text == '/start':
+                            keyboard = {
+                                "inline_keyboard": [[
+                                    {"text": "🚀 Открыть Monitor", "web_app": {"url": RENDER_URL}}
+                                ]]
+                            }
+                            send_telegram(chat_id, 
+                                f"👋 Привет! Твой Chat ID: <code>{chat_id}</code>", keyboard)
+                    
+                    if 'callback_query' in update:
+                        cb = update['callback_query']
+                        chat_id = cb['message']['chat']['id']
+                        cb_data = cb['data']
+                        
+                        if cb_data.startswith('pause_'):
+                            pair_id = int(cb_data.split('_')[1])
+                            if chat_id in monitors and pair_id < len(monitors[chat_id]):
+                                monitors[chat_id][pair_id].pause()
+                                send_telegram(chat_id, "⏸ Пауза")
+                        
+                        elif cb_data.startswith('stop_'):
+                            pair_id = int(cb_data.split('_')[1])
+                            if chat_id in monitors and pair_id < len(monitors[chat_id]):
+                                monitors[chat_id][pair_id].stop()
+                                send_telegram(chat_id, "⏹ Остановлен")
+                        
+                        requests.post(
+                            f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
+                            json={'callback_query_id': cb['id']}
+                        )
+        except Exception as e:
+            logging.error(f"Polling error: {e}")
+        time.sleep(1)
+
+# ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
 def validate_symbol(symbol):
     try:
         response = requests.get(f'https://api.bybit.com/v5/market/tickers', 
@@ -48,7 +106,8 @@ def validate_symbol(symbol):
         if response.status_code == 200:
             data = response.json()
             return data['retCode'] == 0 and len(data['result']['list']) > 0
-    except: pass
+    except: 
+        return False
     return False
 
 def format_interval(value, unit):
@@ -82,7 +141,8 @@ class PairMonitor:
                 data = response.json()
                 if data['retCode'] == 0 and data['result']['list']:
                     return float(data['result']['list'][0]['lastPrice'])
-        except: pass
+        except: 
+            pass
         return None
     
     def get_next_check(self):
@@ -125,6 +185,7 @@ class PairMonitor:
                                 ]]
                             }
                             
+                            # ОТПРАВКА ЧЕРЕЗ НАШУ ФУНКЦИЮ
                             send_telegram(self.chat_id, signal, keyboard)
                     
                     self.next_check = self.get_next_check()
@@ -148,64 +209,6 @@ class PairMonitor:
     def pause(self):
         self.running = False
         logging.info(f"⏸ Пауза для {self.symbol1}/{self.symbol2}")
-
-# ===== POLLING (для /start) =====
-def polling():
-    offset = 0
-    while True:
-        try:
-            response = requests.get(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
-                params={'offset': offset, 'timeout': 30}
-            )
-            data = response.json()
-            
-            if data['ok'] and data['result']:
-                for update in data['result']:
-                    offset = update['update_id'] + 1
-                    
-                    # Обычные сообщения
-                    if 'message' in update:
-                        chat_id = update['message']['chat']['id']
-                        text = update['message'].get('text', '')
-                        
-                        logging.info(f"📨 {chat_id}: {text}")
-                        
-                        if text == '/start':
-                            keyboard = {
-                                "inline_keyboard": [[
-                                    {"text": "🚀 Открыть Monitor", "web_app": {"url": RENDER_URL}}
-                                ]]
-                            }
-                            send_telegram(chat_id, 
-                                f"👋 Привет! Твой Chat ID: <code>{chat_id}</code>", keyboard)
-                    
-                    # Нажатия на кнопки
-                    if 'callback_query' in update:
-                        cb = update['callback_query']
-                        chat_id = cb['message']['chat']['id']
-                        data = cb['data']
-                        
-                        if data.startswith('pause_'):
-                            pair_id = int(data.split('_')[1])
-                            if chat_id in monitors and pair_id < len(monitors[chat_id]):
-                                monitors[chat_id][pair_id].pause()
-                                send_telegram(chat_id, "⏸ Пауза")
-                        
-                        elif data.startswith('stop_'):
-                            pair_id = int(data.split('_')[1])
-                            if chat_id in monitors and pair_id < len(monitors[chat_id]):
-                                monitors[chat_id][pair_id].stop()
-                                send_telegram(chat_id, "⏹ Остановлен")
-                        
-                        # Отвечаем на callback
-                        requests.post(
-                            f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
-                            json={'callback_query_id': cb['id']}
-                        )
-        except Exception as e:
-            logging.error(f"Polling error: {e}")
-        time.sleep(1)
 
 # ===== FLASK ЭНДПОИНТЫ =====
 @app.route('/')
