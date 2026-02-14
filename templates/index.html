@@ -5,59 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Monitor</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000);
             padding: 16px;
         }
-        
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
+        .container { max-width: 600px; margin: 0 auto; }
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #fff);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
-        
         h1 {
             font-size: 24px;
             margin-bottom: 20px;
             color: var(--tg-theme-button-color, #40a7e3);
         }
-        
-        .card {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .form-group {
-            margin-bottom: 12px;
-        }
-        
+        h3 { margin-bottom: 12px; }
+        .form-group { margin-bottom: 12px; }
         label {
             display: block;
             margin-bottom: 4px;
             font-weight: 500;
         }
-        
-        input, select {
+        input {
             width: 100%;
             padding: 10px;
-            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            border: 1px solid var(--tg-theme-hint-color, #ddd);
             border-radius: 8px;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            font-size: 16px;
         }
-        
         button {
             background: var(--tg-theme-button-color, #40a7e3);
-            color: var(--tg-theme-button-text-color, #ffffff);
+            color: var(--tg-theme-button-text-color, #fff);
             border: none;
             border-radius: 8px;
             padding: 12px 20px;
@@ -67,51 +51,46 @@
             width: 100%;
             margin-bottom: 8px;
         }
-        
         button.secondary {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            color: var(--tg-theme-text-color, #000000);
+            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+            color: var(--tg-theme-text-color, #000);
         }
-        
+        .menu-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .menu-row button { flex: 1; margin: 0; }
         .pair-item {
-            background: var(--tg-theme-bg-color, #ffffff);
+            background: var(--tg-theme-bg-color, #fafafa);
             border-radius: 8px;
             padding: 12px;
             margin-bottom: 8px;
+        }
+        .pair-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 4px;
         }
-        
-        .pair-info {
-            flex: 1;
-        }
-        
         .pair-name {
             font-weight: 600;
             font-size: 16px;
         }
-        
+        .status {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-active { background: #2ecc71; }
+        .status-inactive { background: #e74c3c; }
         .pair-details {
             font-size: 14px;
             color: var(--tg-theme-hint-color, #666);
+            margin-bottom: 8px;
         }
-        
-        .pair-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-left: 8px;
-        }
-        
-        .status-active {
-            background: #2ecc71;
-        }
-        
-        .status-inactive {
-            background: #e74c3c;
-        }
-        
         .delete-btn {
             background: #e74c3c;
             color: white;
@@ -120,22 +99,8 @@
             padding: 4px 8px;
             cursor: pointer;
         }
-        
-        .menu-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .menu-row button {
-            flex: 1;
-            margin: 0;
-        }
-        
-        .back-btn {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            color: var(--tg-theme-text-color, #000000);
-        }
+        .error { color: #e74c3c; margin-bottom: 8px; }
+        .success { color: #27ae60; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -144,30 +109,31 @@
         
         <div id="mainMenu">
             <div class="menu-row">
-                <button onclick="showAddPair()">➕ Добавить пару</button>
-                <button onclick="showPairs()" class="secondary">📋 Мои пары</button>
+                <button onclick="showAddPair()">➕ Добавить</button>
+                <button onclick="showPairs()" class="secondary">📋 Мои</button>
             </div>
             <div class="menu-row">
-                <button onclick="stopAll()">⏹ Остановить все</button>
+                <button onclick="stopAll()">⏹ Стоп все</button>
             </div>
         </div>
         
-        <div id="addPairForm" style="display: none;">
+        <div id="addForm" style="display: none;">
             <div class="card">
-                <h3>📊 Добавление пары</h3>
+                <h3>➕ Новая пара</h3>
+                <div id="formError" class="error"></div>
                 
                 <div class="form-group">
                     <label>Первый тикер:</label>
-                    <input type="text" id="symbol1" placeholder="например: paxgusdt">
+                    <input type="text" id="symbol1" placeholder="paxgusdt">
                 </div>
                 
                 <div class="form-group">
                     <label>Второй тикер:</label>
-                    <input type="text" id="symbol2" placeholder="например: xautusdt">
+                    <input type="text" id="symbol2" placeholder="xautusdt">
                 </div>
                 
                 <div class="form-group">
-                    <label>Пороговое отношение:</label>
+                    <label>Порог:</label>
                     <input type="number" id="threshold" step="0.0001" value="1.0048">
                 </div>
                 
@@ -180,32 +146,24 @@
             <div class="card">
                 <h3>📋 Мои пары</h3>
                 <div id="pairsContainer"></div>
-                <button onclick="showMainMenu()" class="secondary" style="margin-top: 16px;">◀️ Назад</button>
+                <button onclick="showMainMenu()" class="secondary" style="margin-top: 12px;">◀️ Назад</button>
             </div>
         </div>
     </div>
     
     <script>
-        // Получаем Chat ID из Telegram WebApp
-        let tg = window.Telegram?.WebApp;
         let chatId = null;
         
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            // В реальном Mini App данные пользователя доступны через tg.initData
-            // Но для простоты будем передавать chatId через URL
-        }
-        
-        // Функция для получения Chat ID (нужно передавать через URL)
         function getChatId() {
-            // В реальном приложении нужно получать из initData
-            // Пока просто спрашиваем или берем из localStorage
-            let stored = localStorage.getItem('chatId');
-            if (stored) return stored;
-            
-            let id = prompt("Введи свой Chat ID (можно скопировать из сообщения бота):");
+            if (chatId) return chatId;
+            const stored = localStorage.getItem('chatId');
+            if (stored) {
+                chatId = stored;
+                return chatId;
+            }
+            const id = prompt("Введи Chat ID (из сообщения бота):");
             if (id) {
+                chatId = id;
                 localStorage.setItem('chatId', id);
                 return id;
             }
@@ -214,133 +172,138 @@
         
         function showMainMenu() {
             document.getElementById('mainMenu').style.display = 'block';
-            document.getElementById('addPairForm').style.display = 'none';
+            document.getElementById('addForm').style.display = 'none';
             document.getElementById('pairsList').style.display = 'none';
+            document.getElementById('formError').innerHTML = '';
         }
         
         function showAddPair() {
             document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('addPairForm').style.display = 'block';
+            document.getElementById('addForm').style.display = 'block';
             document.getElementById('pairsList').style.display = 'none';
         }
         
         async function showPairs() {
             document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('addPairForm').style.display = 'none';
+            document.getElementById('addForm').style.display = 'none';
             document.getElementById('pairsList').style.display = 'block';
-            
             await loadPairs();
         }
         
         async function loadPairs() {
-            const chatId = getChatId();
-            if (!chatId) return;
+            const cid = getChatId();
+            if (!cid) return;
             
             try {
-                const response = await fetch(`/api/pairs/${chatId}`);
-                const data = await response.json();
+                const res = await fetch(`/api/pairs/${cid}`);
+                const data = await res.json();
                 
                 const container = document.getElementById('pairsContainer');
                 container.innerHTML = '';
                 
-                if (data.pairs.length === 0) {
+                if (!data.pairs || data.pairs.length === 0) {
                     container.innerHTML = '<p>Нет сохраненных пар</p>';
                     return;
                 }
                 
-                data.pairs.forEach(pair => {
+                data.pairs.forEach(p => {
                     const div = document.createElement('div');
                     div.className = 'pair-item';
                     
-                    const status = pair.active ? '🟢' : '🔴';
-                    const lastRatio = pair.last_ratio ? pair.last_ratio.toFixed(6) : '—';
+                    const status = p.active ? '🟢' : '🔴';
+                    const last = p.last_ratio ? p.last_ratio.toFixed(6) : '—';
                     
                     div.innerHTML = `
-                        <div class="pair-info">
-                            <div class="pair-name">${status} ${pair.symbol1.toUpperCase()}/${pair.symbol2.toUpperCase()}</div>
-                            <div class="pair-details">Порог: ${pair.threshold} | Последнее: ${lastRatio}</div>
+                        <div class="pair-header">
+                            <span class="pair-name">${status} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}</span>
+                            <button class="delete-btn" onclick="removePair(${p.id})">✖</button>
                         </div>
-                        <button class="delete-btn" onclick="removePair(${pair.id})">✖</button>
+                        <div class="pair-details">
+                            Порог: ${p.threshold}<br>
+                            Текущее: ${last}
+                        </div>
                     `;
                     
                     container.appendChild(div);
                 });
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
+            } catch (e) {
+                alert('Ошибка загрузки: ' + e);
             }
         }
         
         async function addPair() {
-            const chatId = getChatId();
-            if (!chatId) return;
+            const cid = getChatId();
+            if (!cid) return;
             
-            const symbol1 = document.getElementById('symbol1').value;
-            const symbol2 = document.getElementById('symbol2').value;
-            const threshold = parseFloat(document.getElementById('threshold').value);
+            const s1 = document.getElementById('symbol1').value;
+            const s2 = document.getElementById('symbol2').value;
+            const th = parseFloat(document.getElementById('threshold').value);
             
-            if (!symbol1 || !symbol2 || !threshold) {
-                alert('Заполни все поля');
+            document.getElementById('formError').innerHTML = '';
+            
+            if (!s1 || !s2) {
+                document.getElementById('formError').innerHTML = 'Заполни все поля';
                 return;
             }
             
             try {
-                const response = await fetch('/api/add_pair', {
+                const res = await fetch('/api/add_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId, symbol1, symbol2, threshold})
+                    body: JSON.stringify({
+                        chatId: parseInt(cid),
+                        symbol1: s1,
+                        symbol2: s2,
+                        threshold: th
+                    })
                 });
                 
-                const data = await response.json();
-                if (data.success) {
-                    alert('✅ Пара добавлена!');
+                const data = await res.json();
+                
+                if (data.error) {
+                    document.getElementById('formError').innerHTML = data.error;
+                } else {
+                    alert('✅ Пара добавлена');
                     showMainMenu();
                 }
-            } catch (error) {
-                alert('❌ Ошибка: ' + error);
+            } catch (e) {
+                document.getElementById('formError').innerHTML = 'Ошибка: ' + e;
             }
         }
         
         async function removePair(pairId) {
-            const chatId = getChatId();
-            if (!chatId) return;
+            const cid = getChatId();
+            if (!cid) return;
             
             if (!confirm('Удалить пару?')) return;
             
             try {
-                const response = await fetch('/api/remove_pair', {
+                await fetch('/api/remove_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId, pairId})
+                    body: JSON.stringify({chatId: parseInt(cid), pairId})
                 });
-                
-                const data = await response.json();
-                if (data.success) {
-                    await loadPairs();
-                }
-            } catch (error) {
-                alert('❌ Ошибка: ' + error);
+                await loadPairs();
+            } catch (e) {
+                alert('Ошибка: ' + e);
             }
         }
         
         async function stopAll() {
-            const chatId = getChatId();
-            if (!chatId) return;
+            const cid = getChatId();
+            if (!cid) return;
             
             if (!confirm('Остановить все мониторы?')) return;
             
             try {
-                const response = await fetch('/api/stop_all', {
+                await fetch('/api/stop_all', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId})
+                    body: JSON.stringify({chatId: parseInt(cid)})
                 });
-                
-                const data = await response.json();
-                if (data.success) {
-                    alert('⏹ Все мониторы остановлены');
-                }
-            } catch (error) {
-                alert('❌ Ошибка: ' + error);
+                alert('⏹ Все остановлено');
+            } catch (e) {
+                alert('Ошибка: ' + e);
             }
         }
     </script>
