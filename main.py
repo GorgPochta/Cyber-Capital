@@ -274,6 +274,11 @@ def run_flask():
 
 async def main():
     global bot_app
+    logging.info("🚀 Запуск...")    
+    # ПРИНУДИТЕЛЬНО сбрасываем вебхук
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook?drop_pending_updates=true"
+    requests.get(url)
+    logging.info("✅ Вебхук сброшен")
     bot_app = Application.builder().token(BOT_TOKEN).build()
     bot_app.add_handler(CommandHandler("start", start))
     bot_app.add_handler(CallbackQueryHandler(button_handler))
