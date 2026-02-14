@@ -163,7 +163,7 @@
             font-size: 12px;
         }
 
-        input {
+        input, select {
             width: 100%;
             padding: 14px 16px;
             background: #0f151c;
@@ -174,14 +174,18 @@
             transition: all 0.2s;
         }
 
-        input:focus {
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        input:focus, select:focus {
             outline: none;
             border-color: #2277ff;
             background: #141c26;
-        }
-
-        input::placeholder {
-            color: #4a5568;
         }
 
         .input-hint {
@@ -191,62 +195,57 @@
             margin-left: 4px;
         }
 
-        .input-row {
+        /* Ряд с выбором интервала */
+        .interval-row {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
         }
 
-        .input-row input {
+        .interval-row input {
+            flex: 2;
+        }
+
+        .interval-row select {
             flex: 1;
         }
 
-        .input-row span {
-            color: #9aa6b8;
-            font-weight: 500;
-        }
-
-        .ratio-input {
+        .alert {
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .ratio-input input {
-            flex: 1;
+        .alert.error {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.2);
         }
 
-        .ratio-input button {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: #1e293b;
-            border: none;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #9aa6b8;
+            font-size: 14px;
+            margin-bottom: 16px;
             cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .back-button:hover {
+            color: white;
         }
 
         /* Список пар */
         .pairs-list {
             max-height: 400px;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #2277ff #1a1f26;
-        }
-
-        .pairs-list::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .pairs-list::-webkit-scrollbar-track {
-            background: #1a1f26;
-        }
-
-        .pairs-list::-webkit-scrollbar-thumb {
-            background: #2277ff;
-            border-radius: 4px;
         }
 
         .pair-item {
@@ -255,15 +254,18 @@
             padding: 14px;
             margin-bottom: 10px;
             border: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .pair-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 8px;
         }
 
-        .pair-info h4 {
-            font-size: 16px;
+        .pair-name {
             font-weight: 600;
-            margin-bottom: 4px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -278,21 +280,18 @@
         }
 
         .pair-details {
-            display: flex;
-            gap: 12px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
             font-size: 13px;
             color: #9aa6b8;
-        }
-
-        .pair-details span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+            margin-bottom: 8px;
         }
 
         .pair-actions {
             display: flex;
             gap: 8px;
+            justify-content: flex-end;
         }
 
         .icon-button {
@@ -314,60 +313,10 @@
             color: #ff4757;
         }
 
-        .icon-button.active {
-            background: rgba(46, 204, 113, 0.1);
-            color: #2ecc71;
-        }
-
         .empty-state {
             text-align: center;
             padding: 40px 20px;
             color: #5f6b7a;
-        }
-
-        .empty-state i {
-            font-size: 48px;
-            display: block;
-            margin-bottom: 12px;
-            opacity: 0.3;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .alert.error {
-            background: rgba(255, 71, 87, 0.1);
-            color: #ff4757;
-            border: 1px solid rgba(255, 71, 87, 0.2);
-        }
-
-        .alert.success {
-            background: rgba(46, 204, 113, 0.1);
-            color: #2ecc71;
-            border: 1px solid rgba(46, 204, 113, 0.2);
-        }
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            color: #9aa6b8;
-            font-size: 14px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            background: none;
-            border: none;
-        }
-
-        .back-button:hover {
-            color: white;
         }
     </style>
 </head>
@@ -385,7 +334,7 @@
             </div>
         </div>
 
-        <!-- Основное меню (всегда видно) -->
+        <!-- Основное меню -->
         <div id="mainMenu">
             <div class="menu-grid">
                 <button class="menu-button" onclick="showAddPair()">
@@ -416,7 +365,7 @@
                         <span>Первый тикер</span>
                         <span>обязательно</span>
                     </div>
-                    <input type="text" id="symbol1" placeholder="например: paxgusdt">
+                    <input type="text" id="symbol1" placeholder="например: btcusdt">
                     <div class="input-hint">Должен заканчиваться на usdt</div>
                 </div>
                 
@@ -425,7 +374,7 @@
                         <span>Второй тикер</span>
                         <span>обязательно</span>
                     </div>
-                    <input type="text" id="symbol2" placeholder="например: xautusdt">
+                    <input type="text" id="symbol2" placeholder="например: ethusdt">
                     <div class="input-hint">Должен заканчиваться на usdt</div>
                 </div>
                 
@@ -434,21 +383,27 @@
                         <span>Пороговое отношение</span>
                         <span>обязательно</span>
                     </div>
-                    <div class="ratio-input">
-                        <input type="number" id="threshold" step="0.0001" value="1.0048">
-                        <button onclick="adjustThreshold(0.0001)">▲</button>
-                    </div>
+                    <input type="number" id="threshold" step="0.0001" value="1.0048">
                     <div class="input-hint">Сигнал сработает при достижении этого значения</div>
                 </div>
 
-                <!-- НОВОЕ ПОЛЕ: Интервал в минутах -->
+                <!-- Интервал: просто число + единица измерения -->
                 <div class="form-group">
                     <div class="form-label">
-                        <span>Интервал проверки (минуты)</span>
+                        <span>Интервал проверки</span>
                         <span>обязательно</span>
                     </div>
-                    <input type="number" id="interval" min="1" max="60" value="1">
-                    <div class="input-hint">Как часто проверять цену (от 1 до 60 минут)</div>
+                    <div class="interval-row">
+                        <input type="number" id="interval_value" min="1" value="1">
+                        <select id="interval_unit">
+                            <option value="minute">Минуты</option>
+                            <option value="hour">Часы</option>
+                            <option value="day" selected>Дни</option>
+                            <option value="week">Недели</option>
+                            <option value="month">Месяцы</option>
+                        </select>
+                    </div>
+                    <div class="input-hint">Например: 1 день, 2 недели, 1 месяц</div>
                 </div>
                 
                 <button class="menu-button" onclick="addPair()" style="margin-top: 8px;">
@@ -480,7 +435,6 @@
         let chatId = localStorage.getItem('chatId');
         let tg = window.Telegram?.WebApp;
 
-        // Инициализация Telegram WebApp
         if (tg) {
             tg.ready();
             tg.expand();
@@ -530,9 +484,28 @@
             document.getElementById('formError').style.display = 'none';
         }
 
-        function adjustThreshold(step) {
-            const input = document.getElementById('threshold');
-            input.value = (parseFloat(input.value) + step).toFixed(4);
+        // Функция для перевода интервала в секунды
+        function intervalToSeconds(value, unit) {
+            const multipliers = {
+                'minute': 60,
+                'hour': 3600,
+                'day': 86400,
+                'week': 604800,
+                'month': 2592000  // 30 дней
+            };
+            return value * (multipliers[unit] || 60);
+        }
+
+        // Функция для красивого отображения интервала
+        function formatInterval(value, unit) {
+            const unitNames = {
+                'minute': 'мин',
+                'hour': 'ч',
+                'day': 'дн',
+                'week': 'нед',
+                'month': 'мес'
+            };
+            return `${value} ${unitNames[unit]}`;
         }
 
         async function loadPairs() {
@@ -546,12 +519,7 @@
                 const container = document.getElementById('pairsContainer');
                 
                 if (!data.pairs || data.pairs.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i>📭</i>
-                            <p>У вас пока нет сохраненных пар</p>
-                        </div>
-                    `;
+                    container.innerHTML = '<div class="empty-state"><i>📭</i><p>Нет сохраненных пар</p></div>';
                     return;
                 }
 
@@ -560,20 +528,19 @@
                     const last = p.last_ratio ? p.last_ratio.toFixed(6) : '—';
                     return `
                         <div class="pair-item">
-                            <div class="pair-info">
-                                <h4>
+                            <div class="pair-header">
+                                <span class="pair-name">
                                     ${status} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}
-                                    <span class="pair-badge">${p.active ? 'Активна' : 'Остановлена'}</span>
-                                </h4>
-                                <div class="pair-details">
-                                    <span>🎯 Порог: ${p.threshold}</span>
-                                    <span>⏱ Интервал: ${p.interval || 1} мин</span>
-                                    <span>📊 Текущее: ${last}</span>
-                                </div>
+                                    <span class="pair-badge">${p.active ? 'Активна' : 'Пауза'}</span>
+                                </span>
+                            </div>
+                            <div class="pair-details">
+                                <span>🎯 ${p.threshold}</span>
+                                <span>⏱ ${p.interval_text || '1 день'}</span>
+                                <span>📊 ${last}</span>
                             </div>
                             <div class="pair-actions">
-                                <button class="icon-button ${p.active ? 'active' : ''}" 
-                                        onclick="togglePair(${p.id})">
+                                <button class="icon-button" onclick="togglePair(${p.id})">
                                     ${p.active ? '⏸️' : '▶️'}
                                 </button>
                                 <button class="icon-button delete" onclick="removePair(${p.id})">
@@ -595,15 +562,16 @@
             const s1 = document.getElementById('symbol1').value.trim().toLowerCase();
             const s2 = document.getElementById('symbol2').value.trim().toLowerCase();
             const th = parseFloat(document.getElementById('threshold').value);
-            const interval = parseInt(document.getElementById('interval').value) || 1;
+            const intervalValue = parseInt(document.getElementById('interval_value').value);
+            const intervalUnit = document.getElementById('interval_unit').value;
 
-            if (!s1 || !s2) {
+            if (!s1 || !s2 || !th) {
                 showError('Заполни все поля');
                 return;
             }
 
-            if (interval < 1 || interval > 60) {
-                showError('Интервал должен быть от 1 до 60 минут');
+            if (intervalValue < 1) {
+                showError('Интервал должен быть больше 0');
                 return;
             }
 
@@ -616,7 +584,8 @@
                         symbol1: s1,
                         symbol2: s2,
                         threshold: th,
-                        interval: interval
+                        interval_value: intervalValue,
+                        interval_unit: intervalUnit
                     })
                 });
 
@@ -627,7 +596,7 @@
                 } else {
                     showMainMenu();
                     if (tg) {
-                        tg.showAlert('✅ Пара успешно добавлена!');
+                        tg.showAlert('✅ Пара добавлена!');
                     }
                 }
             } catch (e) {
@@ -669,7 +638,7 @@
         async function togglePair(pairId) {
             const cid = getChatId();
             try {
-                await fetch('/api/restart_pair', {
+                await fetch('/api/toggle_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({chatId: parseInt(cid), pairId})
