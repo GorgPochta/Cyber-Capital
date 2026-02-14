@@ -29,7 +29,8 @@ def validate_symbol(symbol):
         if response.status_code == 200:
             data = response.json()
             return data['retCode'] == 0 and len(data['result']['list']) > 0
-    except: pass
+    except: 
+        return False
     return False
 
 def format_interval(value, unit):
@@ -51,9 +52,16 @@ def send_telegram(chat_id, text, keyboard=None):
     if keyboard:
         data['reply_markup'] = json.dumps(keyboard)
     try:
-        requests.post(url, json=data)
+        response = requests.post(url, json=data, timeout=10)
+        if response.status_code == 200:
+            logging.info(f"✅ Сообщение отправлено в чат {chat_id}")
+            return True
+        else:
+            logging.error(f"❌ Ошибка Telegram: {response.text}")
+            return False
     except Exception as e:
-        logging.error(f"Ошибка отправки: {e}")
+        logging.error(f"❌ Ошибка отправки: {e}")
+        return False
 
 # ===== КЛАСС МОНИТОРИНГА =====
 class PairMonitor:
@@ -72,6 +80,7 @@ class PairMonitor:
         logging.info(f"✅ Создан монитор {symbol1}/{symbol2} для {chat_id}")
     
     def fetch_price(self, symbol):
+        """Получает цену с Bybit"""
         try:
             response = requests.get(f'https://api.bybit.com/v5/market/tickers',
                                    params={'category': 'linear', 'symbol': symbol.upper()}, timeout=5)
@@ -79,53 +88,76 @@ class PairMonitor:
                 data = response.json()
                 if data['retCode'] == 0 and data['result']['list']:
                     return float(data['result']['list'][0]['lastPrice'])
-        except: pass
+        except: 
+            pass
         return None
     
     def get_next_check(self):
+        """Вычисляет время следующей проверки"""
         now = datetime.now()
-        if self.interval_unit == 'minute': return now + timedelta(minutes=self.interval_value)
-        if self.interval_unit == 'hour': return now + timedelta(hours=self.interval_value)
-        if self.interval_unit == 'day': return now + timedelta(days=self.interval_value)
-        if self.interval_unit == 'week': return now + timedelta(weeks=self.interval_value)
-        if self.interval_unit == 'month': return now + timedelta(days=30 * self.interval_value)
+        if self.interval_unit == 'minute':
+            return now + timedelta(minutes=self.interval_value)
+        elif self.interval_unit == 'hour':
+            return now + timedelta(hours=self.interval_value)
+        elif self.interval_unit == 'day':
+            return now + timedelta(days=self.interval_value)
+        elif self.interval_unit == 'week':
+            return now + timedelta(weeks=self.interval_value)
+        elif self.interval_unit == 'month':
+            return now + timedelta(days=30 * self.interval_value)
         return now + timedelta(hours=1)
     
     def check_loop(self):
+        """Основной цикл проверки"""
         while self.running:
             try:
                 now = datetime.now()
                 if now >= self.next_check:
+                    # Получаем цены
                     price1 = self.fetch_price(self.symbol1)
                     price2 = self.fetch_price(self.symbol2)
                     
                     if price1 and price2:
                         ratio = price1 / price2
                         self.last_ratio = ratio
+                        
                         logging.info(f"📊 {self.symbol1}/{self.symbol2} = {ratio:.6f}")
                         
+                        # Проверяем порог
                         if ratio >= self.threshold:
-                            signal = (f"🚨 <b>СИГНАЛ!</b>\n\n"
-                                    f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
-                                    f"<b>Отношение:</b> {ratio:.6f}\n"
-                                    f"<b>Порог:</b> {self.threshold}\n"
-                                    f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
-                                    f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}")
+                            logging.info(f"🎯 СРАБОТАЛО! {ratio:.6f} >= {self.threshold}")
                             
-                            keyboard = {"inline_keyboard": [[
-                                {"text": "⏸ Пауза", "callback_data": f"pause_{self.pair_id}"},
-                                {"text": "⏹ Стоп", "callback_data": f"stop_{self.pair_id}"}
-                            ]]}
+                            # Формируем сообщение
+                            signal = (
+                                f"🚨 <b>СИГНАЛ!</b>\n\n"
+                                f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
+                                f"<b>Отношение:</b> {ratio:.6f}\n"
+                                f"<b>Порог:</b> {self.threshold}\n"
+                                f"<b>Интервал:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
+                                f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
+                            )
                             
+                            # Кнопки управления
+                            keyboard = {
+                                "inline_keyboard": [[
+                                    {"text": "⏸ Пауза", "callback_data": f"pause_{self.pair_id}"},
+                                    {"text": "⏹ Стоп", "callback_data": f"stop_{self.pair_id}"}
+                                ]]
+                            }
+                            
+                            # ОТПРАВЛЯЕМ В ТЕЛЕГРАМ
                             send_telegram(self.chat_id, signal, keyboard)
                     
+                    # Устанавливаем следующую проверку
                     self.next_check = self.get_next_check()
+                
                 time.sleep(5)
             except Exception as e:
-                logging.error(f"Ошибка: {traceback.format_exc()}")
+                logging.error(f"Ошибка в цикле: {traceback.format_exc()}")
                 time.sleep(10)
     
     def start(self):
+        """Запускает мониторинг"""
         self.running = True
         self.next_check = self.get_next_check()
         self.thread = threading.Thread(target=self.check_loop)
@@ -134,23 +166,29 @@ class PairMonitor:
         logging.info(f"▶️ Запущен {self.symbol1}/{self.symbol2}")
     
     def stop(self):
+        """Останавливает мониторинг"""
         self.running = False
         logging.info(f"⏹ Остановлен {self.symbol1}/{self.symbol2}")
     
     def pause(self):
+        """Ставит на паузу"""
         self.running = False
         logging.info(f"⏸ Пауза для {self.symbol1}/{self.symbol2}")
 
-# ===== API ЭНДПОИНТЫ (для Mini App) =====
+# ===== API ЭНДПОИНТЫ =====
 @app.route('/api/pairs/<int:chat_id>')
 def get_pairs(chat_id):
     pairs = []
     if chat_id in monitors:
         for p in monitors[chat_id]:
             pairs.append({
-                'id': p.pair_id, 'symbol1': p.symbol1, 'symbol2': p.symbol2,
-                'threshold': p.threshold, 'interval_value': p.interval_value,
-                'interval_unit': p.interval_unit, 'active': p.running,
+                'id': p.pair_id,
+                'symbol1': p.symbol1,
+                'symbol2': p.symbol2,
+                'threshold': p.threshold,
+                'interval_value': p.interval_value,
+                'interval_unit': p.interval_unit,
+                'active': p.running,
                 'last_ratio': p.last_ratio
             })
     return jsonify({'pairs': pairs})
@@ -166,6 +204,7 @@ def add_pair():
         interval_value = int(data.get('interval_value', 1))
         interval_unit = data.get('interval_unit', 'day')
         
+        # Валидация
         if not all([chat_id, symbol1, symbol2, threshold]):
             return jsonify({'error': 'Заполни все поля'}), 400
         
@@ -187,6 +226,7 @@ def add_pair():
         
         return jsonify({'success': True})
     except Exception as e:
+        logging.error(f"Ошибка добавления: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/remove_pair', methods=['POST'])
@@ -197,6 +237,7 @@ def remove_pair():
     if chat_id in monitors and 0 <= pair_id < len(monitors[chat_id]):
         monitors[chat_id][pair_id].stop()
         monitors[chat_id].pop(pair_id)
+        # Обновляем ID
         for i, p in enumerate(monitors[chat_id]):
             p.pair_id = i
     return jsonify({'success': True})
@@ -208,8 +249,9 @@ def toggle_pair():
     pair_id = data.get('pairId')
     if chat_id in monitors and 0 <= pair_id < len(monitors[chat_id]):
         m = monitors[chat_id][pair_id]
-        if m.running: m.pause()
-        else: 
+        if m.running:
+            m.pause()
+        else:
             m.running = True
             m.start()
     return jsonify({'success': True})
@@ -230,7 +272,16 @@ def log_chat():
     logging.info(f"📱 WebApp передал Chat ID: {chat_id}")
     return jsonify({'ok': True})
 
-# ===== ОБРАБОТЧИК КОМАНД TELEGRAM (polling) =====
+# ===== ОСНОВНЫЕ СТРАНИЦЫ =====
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/healthcheck')
+def health():
+    return 'OK', 200
+
+# ===== ОБРАБОТЧИК КОМАНД TELEGRAM =====
 def polling():
     """Постоянно проверяет новые сообщения"""
     offset = 0
@@ -263,7 +314,7 @@ def polling():
                                 f"👋 Привет! Твой Chat ID: <code>{chat_id}</code>\n\nНажми кнопку ниже, чтобы открыть Mini App.",
                                 keyboard)
                     
-                    # Обработка нажатий на кнопки в сообщениях (callback_query)
+                    # Обработка нажатий на кнопки
                     if 'callback_query' in update:
                         cb = update['callback_query']
                         chat_id = cb['message']['chat']['id']
@@ -280,18 +331,14 @@ def polling():
                             if chat_id in monitors and pair_id < len(monitors[chat_id]):
                                 monitors[chat_id][pair_id].stop()
                                 send_telegram(chat_id, "⏹ Остановлен")
+                        
+                        # Отвечаем на callback
+                        callback_url = f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery"
+                        requests.post(callback_url, json={'callback_query_id': cb['id']})
+                        
         except Exception as e:
             logging.error(f"Ошибка polling: {e}")
         time.sleep(1)
-
-# ===== ОСНОВНЫЕ СТРАНИЦЫ =====
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/healthcheck')
-def health():
-    return 'OK', 200
 
 # ===== ЗАПУСК =====
 if __name__ == "__main__":
