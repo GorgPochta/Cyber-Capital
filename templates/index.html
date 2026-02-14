@@ -387,7 +387,7 @@
                     <div class="input-hint">Сигнал сработает при достижении этого значения</div>
                 </div>
 
-                <!-- Интервал: просто число + единица измерения -->
+                <!-- Интервал: число + единица измерения -->
                 <div class="form-group">
                     <div class="form-label">
                         <span>Интервал проверки</span>
@@ -484,28 +484,25 @@
             document.getElementById('formError').style.display = 'none';
         }
 
-        // Функция для перевода интервала в секунды
-        function intervalToSeconds(value, unit) {
-            const multipliers = {
-                'minute': 60,
-                'hour': 3600,
-                'day': 86400,
-                'week': 604800,
-                'month': 2592000  // 30 дней
-            };
-            return value * (multipliers[unit] || 60);
-        }
-
-        // Функция для красивого отображения интервала
+        // Функция для форматирования интервала
         function formatInterval(value, unit) {
-            const unitNames = {
+            const names = {
                 'minute': 'мин',
                 'hour': 'ч',
                 'day': 'дн',
                 'week': 'нед',
                 'month': 'мес'
             };
-            return `${value} ${unitNames[unit]}`;
+            
+            if (value === 1) {
+                if (unit === 'minute') return '1 минуту';
+                if (unit === 'hour') return '1 час';
+                if (unit === 'day') return '1 день';
+                if (unit === 'week') return '1 неделю';
+                if (unit === 'month') return '1 месяц';
+            }
+            
+            return `${value} ${names[unit] || ''}`;
         }
 
         async function loadPairs() {
@@ -536,7 +533,7 @@
                             </div>
                             <div class="pair-details">
                                 <span>🎯 ${p.threshold}</span>
-                                <span>⏱ ${p.interval_text || '1 день'}</span>
+                                <span>⏱ ${formatInterval(p.interval_value, p.interval_unit)}</span>
                                 <span>📊 ${last}</span>
                             </div>
                             <div class="pair-actions">
