@@ -7,6 +7,8 @@ import json
 import traceback
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, render_template
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ===== НАСТРОЙКИ =====
 BOT_TOKEN = "5860512200:AAE4tR8aVkpud3zldj1mV2z9jUJbhDKbQ8c"
@@ -14,13 +16,13 @@ RENDER_URL = "https://cyber-capital.onrender.com"
 PORT = int(os.environ.get('PORT', 10000))
 # =====================
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-app = Flask(__name__)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# Хранилище мониторов
+app = Flask(__name__)
+bot_app = None
 monitors = {}
 
-# ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+# ===== ПРОВЕРКА ТИКЕРОВ =====
 def validate_symbol(symbol):
     try:
         response = requests.get(f'https://api.bybit.com/v5/market/tickers', 
@@ -28,8 +30,7 @@ def validate_symbol(symbol):
         if response.status_code == 200:
             data = response.json()
             return data['retCode'] == 0 and len(data['result']['list']) > 0
-    except: 
-        return False
+    except: pass
     return False
 
 def format_interval(value, unit):
@@ -39,30 +40,9 @@ def format_interval(value, unit):
                 'week': '1 неделю', 'month': '1 месяц'}.get(unit, f'1 {names[unit]}')
     return f'{value} {names.get(unit, "")}'
 
-def send_telegram(chat_id, text, keyboard=None):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {
-        'chat_id': chat_id,
-        'text': text,
-        'parse_mode': 'HTML'
-    }
-    if keyboard:
-        data['reply_markup'] = json.dumps(keyboard)
-    try:
-        response = requests.post(url, json=data, timeout=10)
-        if response.status_code == 200:
-            logging.info(f"✅ Отправлено в {chat_id}")
-            return True
-        else:
-            logging.error(f"❌ Ошибка: {response.text}")
-            return False
-    except Exception as e:
-        logging.error(f"❌ Ошибка: {e}")
-        return False
-
-# ===== КЛАСС МОНИТОРИНГА =====
+# ===== КЛАСС МОНИТОРА =====
 class PairMonitor:
-    def __init__(self, chat_id, pair_id, symbol1, symbol2, threshold, interval_value, interval_unit):
+    def __init__(self, chat_id, pair_id, symbol1, symbol2, threshold, interval_value, interval_unit, bot_app):
         self.chat_id = chat_id
         self.pair_id = pair_id
         self.symbol1 = symbol1.lower()
@@ -70,11 +50,12 @@ class PairMonitor:
         self.threshold = threshold
         self.interval_value = interval_value
         self.interval_unit = interval_unit
+        self.bot_app = bot_app
         self.running = True
         self.last_ratio = None
         self.next_check = datetime.now()
         self.thread = None
-        logging.info(f"✅ Создан {symbol1}/{symbol2}")
+        logging.info(f"✅ Создан монитор {symbol1}/{symbol2} для {chat_id}")
     
     def fetch_price(self, symbol):
         try:
@@ -84,8 +65,7 @@ class PairMonitor:
                 data = response.json()
                 if data['retCode'] == 0 and data['result']['list']:
                     return float(data['result']['list'][0]['lastPrice'])
-        except: 
-            pass
+        except: pass
         return None
     
     def get_next_check(self):
@@ -108,25 +88,38 @@ class PairMonitor:
                     if price1 and price2:
                         ratio = price1 / price2
                         self.last_ratio = ratio
+                        
                         logging.info(f"📊 {self.symbol1}/{self.symbol2} = {ratio:.6f}")
                         
                         if ratio >= self.threshold:
-                            logging.info(f"🎯 СИГНАЛ! {ratio:.6f} >= {self.threshold}")
-                            signal = (
-                                f"🚨 <b>СИГНАЛ!</b>\n\n"
-                                f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
-                                f"<b>Отношение:</b> {ratio:.6f}\n"
-                                f"<b>Порог:</b> {self.threshold}\n"
-                                f"<b>Интервал:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
-                                f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
-                            )
-                            keyboard = {
-                                "inline_keyboard": [[
-                                    {"text": "⏸ Пауза", "callback_data": f"pause_{self.pair_id}"},
-                                    {"text": "⏹ Стоп", "callback_data": f"stop_{self.pair_id}"}
-                                ]]
-                            }
-                            send_telegram(self.chat_id, signal, keyboard)
+                            logging.info(f"🎯 Условие сработало! {ratio:.6f} >= {self.threshold}")
+                            
+                            signal = (f"🚨 <b>СИГНАЛ!</b>\n\n"
+                                    f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
+                                    f"<b>Отношение:</b> {ratio:.6f}\n"
+                                    f"<b>Порог:</b> {self.threshold}\n"
+                                    f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
+                                    f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}")
+                            
+                            keyboard = [[
+                                InlineKeyboardButton("⏸ Пауза", callback_data=f"pause_{self.pair_id}"),
+                                InlineKeyboardButton("⏹ Стоп", callback_data=f"stop_{self.pair_id}")
+                            ]]
+                            
+                            try:
+                                if self.bot_app and self.bot_app.bot:
+                                    asyncio.run_coroutine_threadsafe(
+                                        self.bot_app.bot.send_message(
+                                            chat_id=self.chat_id,
+                                            text=signal,
+                                            reply_markup=InlineKeyboardMarkup(keyboard),
+                                            parse_mode='HTML'
+                                        ),
+                                        self.bot_app.loop
+                                    )
+                                    logging.info(f"✅ Сигнал отправлен для пары {self.pair_id}")
+                            except Exception as e:
+                                logging.error(f"❌ Ошибка отправки: {e}")
                     
                     self.next_check = self.get_next_check()
                 time.sleep(5)
@@ -145,8 +138,20 @@ class PairMonitor:
     def stop(self):
         self.running = False
         logging.info(f"⏹ Остановлен {self.symbol1}/{self.symbol2}")
+    
+    def pause(self):
+        self.running = False
+        logging.info(f"⏸ Пауза для {self.symbol1}/{self.symbol2}")
 
-# ===== API =====
+# ===== FLASK ЭНДПОИНТЫ =====
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/healthcheck')
+def healthcheck():
+    return 'OK', 200
+
 @app.route('/api/pairs/<int:chat_id>')
 def get_pairs(chat_id):
     pairs = []
@@ -186,7 +191,8 @@ def add_pair():
             monitors[chat_id] = []
         
         pair_id = len(monitors[chat_id])
-        monitor = PairMonitor(chat_id, pair_id, symbol1, symbol2, threshold, interval_value, interval_unit)
+        monitor = PairMonitor(chat_id, pair_id, symbol1, symbol2, threshold, 
+                            interval_value, interval_unit, bot_app)
         monitors[chat_id].append(monitor)
         monitor.start()
         
@@ -213,10 +219,8 @@ def toggle_pair():
     pair_id = data.get('pairId')
     if chat_id in monitors and 0 <= pair_id < len(monitors[chat_id]):
         m = monitors[chat_id][pair_id]
-        if m.running:
-            m.running = False
-            logging.info(f"⏸ Пауза {pair_id}")
-        else:
+        if m.running: m.pause()
+        else: 
             m.running = True
             m.start()
     return jsonify({'success': True})
@@ -230,83 +234,73 @@ def stop_all():
             p.stop()
     return jsonify({'success': True})
 
-@app.route('/api/log_chat', methods=['POST'])
-def log_chat():
-    data = request.json
-    logging.info(f"📱 Chat ID: {data.get('chatId')}")
-    return jsonify({'ok': True})
+# ===== ОБРАБОТЧИКИ TELEGRAM =====
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    logging.info(f"📨 /start от {chat_id}")
+    
+    keyboard = [[
+        InlineKeyboardButton("🚀 Открыть Monitor", web_app=WebAppInfo(url=RENDER_URL))
+    ]]
+    await update.message.reply_text(
+        f"👋 Привет, {user.first_name}!\n\nТвой Chat ID: <code>{chat_id}</code>",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode='HTML'
+    )
 
-# ===== СТРАНИЦЫ =====
-@app.route('/')
-def index():
-    return render_template('index.html')
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    chat_id = update.effective_chat.id
+    data = query.data
+    
+    if data.startswith('pause_'):
+        pair_id = int(data.split('_')[1])
+        if chat_id in monitors and pair_id < len(monitors[chat_id]):
+            monitors[chat_id][pair_id].pause()
+            await query.edit_message_text("⏸ Пауза")
+    elif data.startswith('stop_'):
+        pair_id = int(data.split('_')[1])
+        if chat_id in monitors and pair_id < len(monitors[chat_id]):
+            monitors[chat_id][pair_id].stop()
+            await query.edit_message_text("⏹ Остановлен")
 
-@app.route('/healthcheck')
-def health():
-    return 'OK', 200
-
-# ===== ПОЛЛИНГ TELEGRAM =====
-def polling():
-    offset = 0
-    while True:
-        try:
-            url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-            response = requests.get(url, params={'offset': offset, 'timeout': 30})
-            data = response.json()
-            
-            if data['ok'] and data['result']:
-                for update in data['result']:
-                    offset = update['update_id'] + 1
-                    
-                    if 'message' in update:
-                        msg = update['message']
-                        chat_id = msg['chat']['id']
-                        text = msg.get('text', '')
-                        
-                        logging.info(f"📨 {chat_id}: {text}")
-                        
-                        if text == '/start':
-                            keyboard = {
-                                "inline_keyboard": [[
-                                    {"text": "🚀 Открыть Monitor", "web_app": {"url": RENDER_URL}}
-                                ]]
-                            }
-                            send_telegram(chat_id, 
-                                f"👋 Привет! Твой Chat ID: <code>{chat_id}</code>", keyboard)
-                    
-                    if 'callback_query' in update:
-                        cb = update['callback_query']
-                        chat_id = cb['message']['chat']['id']
-                        cb_data = cb['data']
-                        
-                        if cb_data.startswith('pause_'):
-                            pair_id = int(cb_data.split('_')[1])
-                            if chat_id in monitors and pair_id < len(monitors[chat_id]):
-                                monitors[chat_id][pair_id].running = False
-                                send_telegram(chat_id, "⏸ Пауза")
-                        
-                        elif cb_data.startswith('stop_'):
-                            pair_id = int(cb_data.split('_')[1])
-                            if chat_id in monitors and pair_id < len(monitors[chat_id]):
-                                monitors[chat_id][pair_id].stop()
-                                send_telegram(chat_id, "⏹ Остановлен")
-                        
-                        # Отвечаем на callback
-                        requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/answerCallbackQuery",
-                                    json={'callback_query_id': cb['id']})
-        except Exception as e:
-            logging.error(f"Polling error: {e}")
-        time.sleep(1)
+async def error_handler(update, context):
+    logging.error(f"Ошибка: {context.error}")
 
 # ===== ЗАПУСК =====
-if __name__ == "__main__":
-    # Сбрасываем вебхук
-    requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook")
-    logging.info("✅ Вебхук сброшен")
-    
-    # Запускаем polling
-    threading.Thread(target=polling, daemon=True).start()
-    logging.info("✅ Polling запущен")
-    
-    # Запускаем Flask
+def run_flask():
     app.run(host='0.0.0.0', port=PORT)
+
+async def main():
+    global bot_app
+    logging.info("🚀 Запуск...")
+
+    # Создаем приложение бота
+    bot_app = Application.builder().token(BOT_TOKEN).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CallbackQueryHandler(button_handler))
+    bot_app.add_error_handler(error_handler)
+
+    # Сбрасываем вебхук и запускаем polling
+    await bot_app.bot.delete_webhook(drop_pending_updates=True)
+    logging.info("✅ Вебхук сброшен")
+
+    # Запускаем Flask в отдельном потоке
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
+    # Запускаем бота через polling
+    await bot_app.initialize()
+    await bot_app.start()
+    logging.info("✅ Бот запущен через polling")
+    
+    # Бесконечное ожидание
+    while True:
+        await asyncio.sleep(3600)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
