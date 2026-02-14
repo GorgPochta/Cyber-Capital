@@ -82,11 +82,6 @@
         }
         .interval-row input { flex: 2; }
         .interval-row select { flex: 1; }
-        .input-hint {
-            font-size: 11px;
-            color: #5f6b7a;
-            margin-top: 4px;
-        }
         .back-button {
             background: none;
             border: none;
@@ -179,22 +174,22 @@
                 <div id="formError" class="alert error" style="display: none;"></div>
                 
                 <div class="form-group">
-                    <div class="form-label">Первый тикер <span>обязательно</span></div>
-                    <input type="text" id="symbol1" placeholder="btcusdt">
+                    <div class="form-label">Первый тикер</div>
+                    <input type="text" id="symbol1" placeholder="btcusdt" value="paxgusdt">
                 </div>
                 
                 <div class="form-group">
-                    <div class="form-label">Второй тикер <span>обязательно</span></div>
-                    <input type="text" id="symbol2" placeholder="ethusdt">
+                    <div class="form-label">Второй тикер</div>
+                    <input type="text" id="symbol2" placeholder="ethusdt" value="xautusdt">
                 </div>
                 
                 <div class="form-group">
-                    <div class="form-label">Порог <span>обязательно</span></div>
-                    <input type="number" id="threshold" step="0.0001" value="1.0048">
+                    <div class="form-label">Порог</div>
+                    <input type="number" id="threshold" step="0.0001" value="1.0">
                 </div>
 
                 <div class="form-group">
-                    <div class="form-label">Интервал <span>обязательно</span></div>
+                    <div class="form-label">Интервал</div>
                     <div class="interval-row">
                         <input type="number" id="interval_value" min="1" value="1">
                         <select id="interval_unit">
@@ -221,36 +216,75 @@
     </div>
 
     <script>
-        // ===== ПОЛУЧАЕМ REAL CHAT ID =====
-        let tg = window.Telegram?.WebApp;
-        let chatId = 1; // fallback
+        // ===== ПРИНУДИТЕЛЬНОЕ ПОЛУЧЕНИЕ CHAT ID =====
+        let chatId = 1; // Значение по умолчанию
         
-        if (tg) {
+        // Пытаемся получить Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
-            if (tg.initDataUnsafe?.user?.id) {
+            
+            // Получаем ID пользователя
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 chatId = tg.initDataUnsafe.user.id;
-                console.log("✅ Chat ID:", chatId);
+                console.log('✅ Реальный Chat ID:', chatId);
+                
+                // Показываем уведомление об успехе
+                const statusDiv = document.createElement('div');
+                statusDiv.style.position = 'fixed';
+                statusDiv.style.top = '10px';
+                statusDiv.style.left = '10px';
+                statusDiv.style.background = '#27ae60';
+                statusDiv.style.color = 'white';
+                statusDiv.style.padding = '8px 12px';
+                statusDiv.style.borderRadius = '8px';
+                statusDiv.style.fontSize = '12px';
+                statusDiv.style.zIndex = '9999';
+                statusDiv.innerHTML = `✅ ID: ${chatId}`;
+                document.body.appendChild(statusDiv);
+                
+                // Убираем через 3 секунды
+                setTimeout(() => statusDiv.remove(), 3000);
+            } else {
+                console.log('❌ Нет данных пользователя');
+                // Показываем предупреждение
+                const warnDiv = document.createElement('div');
+                warnDiv.style.position = 'fixed';
+                warnDiv.style.top = '10px';
+                warnDiv.style.left = '10px';
+                warnDiv.style.background = '#e74c3c';
+                warnDiv.style.color = 'white';
+                warnDiv.style.padding = '8px 12px';
+                warnDiv.style.borderRadius = '8px';
+                warnDiv.style.fontSize = '12px';
+                warnDiv.style.zIndex = '9999';
+                warnDiv.innerHTML = '❌ Нет данных пользователя. Используется ID 1';
+                document.body.appendChild(warnDiv);
+                setTimeout(() => warnDiv.remove(), 3000);
             }
+        } else {
+            console.log('❌ Telegram WebApp не найден');
         }
-        console.log("🆔 Используется ID:", chatId);
+
+        console.log('🆔 Итоговый Chat ID:', chatId);
 
         function showMainMenu() {
-            mainMenu.style.display = 'block';
-            addForm.style.display = 'none';
-            pairsList.style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('addForm').style.display = 'none';
+            document.getElementById('pairsList').style.display = 'none';
         }
 
         function showAddPair() {
-            mainMenu.style.display = 'none';
-            addForm.style.display = 'block';
-            pairsList.style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('addForm').style.display = 'block';
+            document.getElementById('pairsList').style.display = 'none';
         }
 
         async function showPairs() {
-            mainMenu.style.display = 'none';
-            addForm.style.display = 'none';
-            pairsList.style.display = 'block';
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('addForm').style.display = 'none';
+            document.getElementById('pairsList').style.display = 'block';
             await loadPairs();
         }
 
@@ -324,14 +358,22 @@
                 const res = await fetch('/api/add_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId, symbol1: s1, symbol2: s2, threshold: th, 
-                                         interval_value: iv, interval_unit: iu})
+                    body: JSON.stringify({
+                        chatId: chatId,
+                        symbol1: s1,
+                        symbol2: s2,
+                        threshold: th,
+                        interval_value: iv,
+                        interval_unit: iu
+                    })
                 });
                 const data = await res.json();
                 if (data.error) showError(data.error);
                 else {
                     showMainMenu();
-                    if (tg) tg.showAlert('✅ Пара добавлена!');
+                    if (window.Telegram?.WebApp) {
+                        window.Telegram.WebApp.showAlert('✅ Пара добавлена!');
+                    }
                 }
             } catch (e) {
                 showError('Ошибка: ' + e);
@@ -339,16 +381,33 @@
         }
 
         async function removePair(pairId) {
-            if (!tg || confirm('Удалить пару?')) {
-                try {
-                    await fetch('/api/remove_pair', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({chatId, pairId})
-                    });
-                    await loadPairs();
-                } catch (e) {
-                    showError('Ошибка: ' + e);
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.showConfirm('Удалить пару?', async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            await fetch('/api/remove_pair', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({chatId, pairId})
+                            });
+                            await loadPairs();
+                        } catch (e) {
+                            showError('Ошибка: ' + e);
+                        }
+                    }
+                });
+            } else {
+                if (confirm('Удалить пару?')) {
+                    try {
+                        await fetch('/api/remove_pair', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({chatId, pairId})
+                        });
+                        await loadPairs();
+                    } catch (e) {
+                        showError('Ошибка: ' + e);
+                    }
                 }
             }
         }
@@ -367,16 +426,33 @@
         }
 
         async function stopAll() {
-            if (!tg || confirm('Остановить все мониторы?')) {
-                try {
-                    await fetch('/api/stop_all', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({chatId})
-                    });
-                    if (tg) tg.showAlert('⏹ Все остановлено');
-                } catch (e) {
-                    showError('Ошибка: ' + e);
+            if (window.Telegram?.WebApp) {
+                window.Telegram.WebApp.showConfirm('Остановить все мониторы?', async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            await fetch('/api/stop_all', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({chatId})
+                            });
+                            window.Telegram.WebApp.showAlert('⏹ Все остановлено');
+                        } catch (e) {
+                            showError('Ошибка: ' + e);
+                        }
+                    }
+                });
+            } else {
+                if (confirm('Остановить все мониторы?')) {
+                    try {
+                        await fetch('/api/stop_all', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({chatId})
+                        });
+                        alert('⏹ Все остановлено');
+                    } catch (e) {
+                        showError('Ошибка: ' + e);
+                    }
                 }
             }
         }
