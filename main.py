@@ -1,18 +1,19 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-from flask import Flask, render_template, request, jsonify
-import threading
+import os
+import asyncio
 import requests
 from datetime import datetime
-import asyncio
-import time
 import traceback
-import os
+
+from flask import Flask, request, jsonify, render_template
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ===== НАСТРОЙКИ =====
 BOT_TOKEN = "5860512200:AAE4tR8aVkpud3zldj1mV2z9jUJbhDKbQ8c"
-WEBAPP_URL = "https://cyber-capital.onrender.com"  # ЗАМЕНИ НА СВОЙ АДРЕС!
+# Адрес твоего сервиса на Render (обязательно замени!)
+RENDER_URL = "https://cyber-capital.onrender.com"
+PORT = int(os.environ.get('PORT', 10000))
 # =====================
 
 # Настройка логирования
@@ -21,16 +22,17 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Создаем Flask
+# Создаем Flask приложение
 app = Flask(__name__)
 
-# Глобальные объекты
+# Глобальный объект приложения бота
 bot_app = None
 monitors = {}  # chat_id -> список мониторов
 
-# ===== ПРОВЕРКА ТИКЕРОВ =====
+# ----- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (validate_symbol, PairMonitor и т.д.) -----
+# ... (весь код классов PairMonitor и validate_symbol остается без изменений) ...
+# Вставь сюда код для validate_symbol и класса PairMonitor из предыдущего сообщения
 def validate_symbol(symbol):
-    """Проверяет существование тикера на Bybit"""
     try:
         response = requests.get(
             f'https://api.bybit.com/v5/market/tickers',
@@ -44,7 +46,6 @@ def validate_symbol(symbol):
         pass
     return False
 
-# ===== КЛАСС МОНИТОРА =====
 class PairMonitor:
     def __init__(self, chat_id, pair_id, symbol1, symbol2, threshold, bot_app):
         self.chat_id = chat_id
@@ -109,6 +110,7 @@ class PairMonitor:
             logging.error(f"Ошибка проверки: {traceback.format_exc()}")
         
         if self.running:
+            import threading
             self.thread = threading.Timer(10, lambda: asyncio.run_coroutine_threadsafe(
                 self.check(), self.bot_app.loop
             ))
@@ -116,6 +118,7 @@ class PairMonitor:
     
     def start(self):
         self.running = True
+        import threading
         self.thread = threading.Timer(10, lambda: asyncio.run_coroutine_threadsafe(
             self.check(), self.bot_app.loop
         ))
@@ -127,12 +130,28 @@ class PairMonitor:
         if self.thread:
             self.thread.cancel()
         logging.info(f"⏹ Остановлен мониторинг {self.symbol1}/{self.symbol2}")
+# ----- КОНЕЦ ВСПОМОГАТЕЛЬНЫХ ФУНКЦИЙ -----
 
-# ===== FLASK =====
+
+# ----- FLASK ЭНДПОИНТЫ (ДЛЯ WEBAPP И WEBHOOK) -----
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# Эндпоинт для приема обновлений от Telegram (вебхук)
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    if bot_app:
+        update = Update.de_json(request.get_json(force=True), bot_app.bot)
+        asyncio.run_coroutine_threadsafe(bot_app.process_update(update), bot_app.loop)
+    return '', 200
+
+# Эндпоинт для проверки здоровья (Render его пингует)
+@app.route('/healthcheck', methods=['GET'])
+def healthcheck():
+    return 'OK', 200
+
+# ----- API ЭНДПОИНТЫ (те же, что и раньше) -----
 @app.route('/api/pairs/<int:chat_id>')
 def get_pairs(chat_id):
     try:
@@ -160,7 +179,6 @@ def add_pair():
         symbol2 = data.get('symbol2', '').lower().strip()
         threshold = float(data.get('threshold', 0))
         
-        # Валидация
         if not all([chat_id, symbol1, symbol2, threshold]):
             return jsonify({'error': 'Заполни все поля'}), 400
         
@@ -169,11 +187,9 @@ def add_pair():
         
         if not validate_symbol(symbol1):
             return jsonify({'error': f'Тикер {symbol1} не найден'}), 400
-        
         if not validate_symbol(symbol2):
             return jsonify({'error': f'Тикер {symbol2} не найден'}), 400
         
-        # Создаем монитор
         if chat_id not in monitors:
             monitors[chat_id] = []
         
@@ -183,7 +199,6 @@ def add_pair():
         monitor.start()
         
         return jsonify({'success': True})
-        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -197,7 +212,6 @@ def remove_pair():
         if chat_id in monitors and 0 <= pair_id < len(monitors[chat_id]):
             monitors[chat_id][pair_id].stop()
             monitors[chat_id].pop(pair_id)
-            # Обновляем ID
             for i, p in enumerate(monitors[chat_id]):
                 p.pair_id = i
         
@@ -219,12 +233,13 @@ def stop_all():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# ===== TELEGRAM =====
+
+# ----- ОБРАБОТЧИКИ КОМАНД TELEGRAM -----
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user = update.effective_user
         keyboard = [[
-            InlineKeyboardButton("🚀 Открыть Monitor", web_app=WebAppInfo(url=WEBAPP_URL))
+            InlineKeyboardButton("🚀 Открыть Monitor", web_app=WebAppInfo(url=RENDER_URL))
         ]]
         keyboard.append([
             InlineKeyboardButton("📊 Мои пары", callback_data='list_pairs'),
@@ -270,7 +285,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("⚠️ Ошибка, но бот жив")
 
 async def error_handler(update, context):
-    """Глобальный обработчик ошибок"""
     logging.error(f"Ошибка: {context.error}")
     try:
         if update and update.effective_chat:
@@ -281,36 +295,28 @@ async def error_handler(update, context):
     except:
         pass
 
-async def post_init(application):
+
+# ----- ЗАПУСК -----
+async def main():
     global bot_app
-    bot_app = application
-    logging.info("✅ Бот запущен")
-
-# ===== ЗАПУСК =====
-def run_flask():
-    app.run(host='0.0.0.0', port=10000)
-
-def main():
     logging.info("🚀 Запуск...")
-    
-    # Запускаем Flask в отдельном потоке
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-    
-    # Создаем и запускаем бота в ОСНОВНОМ потоке
-    logging.info("🤖 Создание бота...")
-    app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
-    
-    # Добавляем обработчики
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_error_handler(error_handler)
-    
-    logging.info("✅ Бот готов, запускаем polling...")
-    
-    # Запускаем polling (этот вызов БЛОКИРУЕТ поток)
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    # Создаем приложение бота
+    bot_app = Application.builder().token(BOT_TOKEN).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CallbackQueryHandler(button_handler))
+    bot_app.add_error_handler(error_handler)
+
+    # Инициализируем приложение
+    await bot_app.initialize()
+
+    # Устанавливаем вебхук
+    webhook_url = f"{RENDER_URL}/webhook"
+    await bot_app.bot.set_webhook(url=webhook_url, allowed_updates=Update.ALL_TYPES)
+    logging.info(f"✅ Вебхук установлен на {webhook_url}")
+
+    # Запускаем Flask (это заблокирует поток, но бот будет жить в вебхуках)
+    app.run(host='0.0.0.0', port=PORT)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
