@@ -56,7 +56,6 @@ def format_interval(value, unit):
         'week': 'нед',
         'month': 'мес'
     }
-    # Склонение
     if value == 1:
         if unit == 'minute': return '1 минуту'
         elif unit == 'hour': return '1 час'
@@ -71,7 +70,7 @@ def format_interval(value, unit):
         elif unit == 'month': return f'{value} мес'
     return f"{value} {names.get(unit, '')}"
 
-# ===== КЛАСС МОНИТОРА (БЕЗ КОНВЕРТАЦИИ В СЕКУНДЫ) =====
+# ===== КЛАСС МОНИТОРА =====
 class PairMonitor:
     def __init__(self, chat_id, pair_id, symbol1, symbol2, threshold, interval_value, interval_unit, bot_app):
         self.chat_id = chat_id
@@ -116,7 +115,7 @@ class PairMonitor:
         elif self.interval_unit == 'week':
             return now + timedelta(weeks=self.interval_value)
         elif self.interval_unit == 'month':
-            return now + timedelta(days=30 * self.interval_value)  # примерно месяц
+            return now + timedelta(days=30 * self.interval_value)
         return now + timedelta(hours=1)
     
     def check_loop(self):
@@ -135,38 +134,38 @@ class PairMonitor:
                         
                         logging.info(f"📊 {self.symbol1}/{self.symbol2} = {ratio:.6f}")
                         
- if ratio >= self.threshold:
-    # Формируем сообщение с кнопками
-    signal = (
-        f"🚨 <b>СИГНАЛ!</b>\n\n"
-        f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
-        f"<b>Отношение:</b> {ratio:.6f}\n"
-        f"<b>Порог:</b> {self.threshold}\n"
-        f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
-        f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
-    )
-    
-    # Кнопки управления
-    keyboard = [[
-        InlineKeyboardButton("⏸ Пауза", callback_data=f"pause_{self.pair_id}"),
-        InlineKeyboardButton("⏹ Стоп", callback_data=f"stop_{self.pair_id}")
-    ]]
-    
-    # Отправляем сигнал
-    try:
-        if self.bot_app and self.bot_app.bot:
-            asyncio.run_coroutine_threadsafe(
-                self.bot_app.bot.send_message(
-                    chat_id=self.chat_id,
-                    text=signal,
-                    reply_markup=InlineKeyboardMarkup(keyboard),
-                    parse_mode='HTML'
-                ),
-                self.bot_app.loop
-            )
-            logging.info(f"✅ Сигнал отправлен для пары {self.pair_id}")
-    except Exception as e:
-        logging.error(f"❌ Ошибка при отправке сигнала: {e}")
+                        if ratio >= self.threshold:
+                            # Формируем сообщение с кнопками
+                            signal = (
+                                f"🚨 <b>СИГНАЛ!</b>\n\n"
+                                f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
+                                f"<b>Отношение:</b> {ratio:.6f}\n"
+                                f"<b>Порог:</b> {self.threshold}\n"
+                                f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
+                                f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
+                            )
+                            
+                            # Кнопки управления
+                            keyboard = [[
+                                InlineKeyboardButton("⏸ Пауза", callback_data=f"pause_{self.pair_id}"),
+                                InlineKeyboardButton("⏹ Стоп", callback_data=f"stop_{self.pair_id}")
+                            ]]
+                            
+                            # Отправляем сигнал
+                            try:
+                                if self.bot_app and self.bot_app.bot:
+                                    asyncio.run_coroutine_threadsafe(
+                                        self.bot_app.bot.send_message(
+                                            chat_id=self.chat_id,
+                                            text=signal,
+                                            reply_markup=InlineKeyboardMarkup(keyboard),
+                                            parse_mode='HTML'
+                                        ),
+                                        self.bot_app.loop
+                                    )
+                                    logging.info(f"✅ Сигнал отправлен для пары {self.pair_id}")
+                            except Exception as e:
+                                logging.error(f"❌ Ошибка при отправке сигнала: {e}")
                     
                     # Устанавливаем следующую проверку
                     self.next_check = self.get_next_check_time()
@@ -181,7 +180,7 @@ class PairMonitor:
     def start(self):
         """Запускает мониторинг"""
         self.running = True
-        self.next_check = self.get_next_check_time()  # первая проверка
+        self.next_check = self.get_next_check_time()
         self.thread = threading.Thread(target=self.check_loop)
         self.thread.daemon = True
         self.thread.start()
