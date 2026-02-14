@@ -5,272 +5,120 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Monitor</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color, #0a0f14);
-            color: var(--tg-theme-text-color, #e4e6eb);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0f14;
+            color: #e4e6eb;
             padding: 16px;
-            min-height: 100vh;
         }
-
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        /* Хедер */
+        .container { max-width: 500px; margin: 0 auto; }
         .header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 24px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #2277ff, #00c2ff);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: white;
-        }
-
-        .logo-text {
+            font-size: 20px;
             font-weight: 600;
-            font-size: 18px;
-            background: linear-gradient(135deg, #fff, #a0b3cc);
+            background: linear-gradient(135deg, #2277ff, #00c2ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
         .status-badge {
-            background: rgba(46, 204, 113, 0.15);
+            background: rgba(46,204,113,0.15);
             color: #2ecc71;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 13px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
         }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #2ecc71;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        /* Карточки */
         .card {
-            background: var(--tg-theme-secondary-bg-color, #1a1f26);
+            background: #1a1f26;
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: #9aa6b8;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-title i {
-            font-style: normal;
-            color: #2277ff;
-        }
-
-        /* Меню */
         .menu-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin-bottom: 16px;
         }
-
-        .menu-button {
+        button {
             background: linear-gradient(135deg, #2277ff, #00c2ff);
             color: white;
             border: none;
             border-radius: 14px;
-            padding: 14px 8px;
+            padding: 14px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(34, 119, 255, 0.2);
+            width: 100%;
+            margin-bottom: 8px;
         }
-
-        .menu-button.secondary {
-            background: #262f3d;
-            color: #e4e6eb;
-            box-shadow: none;
-        }
-
-        .menu-button.secondary:hover {
-            background: #2f3a4a;
-        }
-
-        .menu-button.danger {
-            background: linear-gradient(135deg, #ff4757, #ff6b81);
-            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
-        }
-
-        /* Форма */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
+        button.secondary { background: #262f3d; }
+        button.danger { background: #ff4757; }
+        .form-group { margin-bottom: 16px; }
         .form-label {
             display: flex;
             justify-content: space-between;
             margin-bottom: 6px;
-            font-size: 13px;
             color: #9aa6b8;
+            font-size: 13px;
         }
-
-        .form-label span {
-            color: #ff4757;
-            font-size: 12px;
-        }
-
         input, select {
             width: 100%;
-            padding: 14px 16px;
+            padding: 14px;
             background: #0f151c;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 12px;
-            font-size: 15px;
             color: white;
-            transition: all 0.2s;
+            font-size: 15px;
         }
-
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 20px;
+        .interval-row {
+            display: flex;
+            gap: 8px;
         }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #2277ff;
-            background: #141c26;
-        }
-
+        .interval-row input { flex: 2; }
+        .interval-row select { flex: 1; }
         .input-hint {
             font-size: 11px;
             color: #5f6b7a;
             margin-top: 4px;
-            margin-left: 4px;
         }
-
-        /* Ряд с выбором интервала */
-        .interval-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .interval-row input {
-            flex: 2;
-        }
-
-        .interval-row select {
-            flex: 1;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 14px;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .alert.error {
-            background: rgba(255, 71, 87, 0.1);
-            color: #ff4757;
-            border: 1px solid rgba(255, 71, 87, 0.2);
-        }
-
         .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            color: #9aa6b8;
-            font-size: 14px;
-            margin-bottom: 16px;
-            cursor: pointer;
             background: none;
             border: none;
+            color: #9aa6b8;
+            margin-bottom: 16px;
+            text-align: left;
+            padding: 0;
         }
-
-        .back-button:hover {
-            color: white;
+        .alert.error {
+            background: rgba(255,71,87,0.1);
+            color: #ff4757;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 16px;
         }
-
-        /* Список пар */
-        .pairs-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
         .pair-item {
             background: #0f151c;
             border-radius: 12px;
             padding: 14px;
             margin-bottom: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.02);
         }
-
         .pair-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 8px;
         }
-
         .pair-name {
             font-weight: 600;
-            font-size: 16px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
-
         .pair-badge {
             background: #1e293b;
             padding: 4px 8px;
@@ -278,7 +126,6 @@
             font-size: 11px;
             color: #9aa6b8;
         }
-
         .pair-details {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -287,237 +134,134 @@
             color: #9aa6b8;
             margin-bottom: 8px;
         }
-
         .pair-actions {
             display: flex;
             gap: 8px;
             justify-content: flex-end;
         }
-
         .icon-button {
             width: 36px;
             height: 36px;
             border-radius: 10px;
-            border: none;
             background: #1e293b;
+            border: none;
             color: white;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
+            margin: 0;
         }
-
-        .icon-button.delete {
-            background: rgba(255, 71, 87, 0.1);
-            color: #ff4757;
-        }
-
+        .icon-button.delete { background: rgba(255,71,87,0.1); color: #ff4757; }
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 40px;
             color: #5f6b7a;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Хедер -->
         <div class="header">
-            <div class="logo">
-                <div class="logo-icon">📊</div>
-                <span class="logo-text">CryptoMonitor</span>
-            </div>
-            <div class="status-badge">
-                <span class="status-dot"></span>
-                Live
-            </div>
+            <span class="logo">📊 CryptoMonitor</span>
+            <span class="status-badge"><span style="width:8px;height:8px;background:#2ecc71;border-radius:50%;display:inline-block;margin-right:4px;"></span>Live</span>
         </div>
 
-        <!-- Основное меню -->
         <div id="mainMenu">
             <div class="menu-grid">
-                <button class="menu-button" onclick="showAddPair()">
-                    ➕ Добавить пару
-                </button>
-                <button class="menu-button secondary" onclick="showPairs()">
-                    📋 Мои пары
-                </button>
+                <button onclick="showAddPair()">➕ Добавить пару</button>
+                <button class="secondary" onclick="showPairs()">📋 Мои пары</button>
             </div>
-            <button class="menu-button danger" onclick="stopAll()">
-                ⏹ Остановить все
-            </button>
+            <button class="danger" onclick="stopAll()">⏹ Остановить все</button>
         </div>
 
-        <!-- Форма добавления пары -->
         <div id="addForm" style="display: none;">
             <button class="back-button" onclick="showMainMenu()">← Назад</button>
-            
             <div class="card">
-                <div class="card-title">
-                    <i>📈</i> Новая пара
-                </div>
-                
+                <div style="font-size:16px;font-weight:600;margin-bottom:16px;">📈 Новая пара</div>
                 <div id="formError" class="alert error" style="display: none;"></div>
                 
                 <div class="form-group">
-                    <div class="form-label">
-                        <span>Первый тикер</span>
-                        <span>обязательно</span>
-                    </div>
-                    <input type="text" id="symbol1" placeholder="например: btcusdt">
-                    <div class="input-hint">Должен заканчиваться на usdt</div>
+                    <div class="form-label">Первый тикер <span>обязательно</span></div>
+                    <input type="text" id="symbol1" placeholder="btcusdt">
                 </div>
                 
                 <div class="form-group">
-                    <div class="form-label">
-                        <span>Второй тикер</span>
-                        <span>обязательно</span>
-                    </div>
-                    <input type="text" id="symbol2" placeholder="например: ethusdt">
-                    <div class="input-hint">Должен заканчиваться на usdt</div>
+                    <div class="form-label">Второй тикер <span>обязательно</span></div>
+                    <input type="text" id="symbol2" placeholder="ethusdt">
                 </div>
                 
                 <div class="form-group">
-                    <div class="form-label">
-                        <span>Пороговое отношение</span>
-                        <span>обязательно</span>
-                    </div>
+                    <div class="form-label">Порог <span>обязательно</span></div>
                     <input type="number" id="threshold" step="0.0001" value="1.0048">
-                    <div class="input-hint">Сигнал сработает при достижении этого значения</div>
                 </div>
 
-                <!-- Интервал: число + единица измерения -->
                 <div class="form-group">
-                    <div class="form-label">
-                        <span>Интервал проверки</span>
-                        <span>обязательно</span>
-                    </div>
+                    <div class="form-label">Интервал <span>обязательно</span></div>
                     <div class="interval-row">
                         <input type="number" id="interval_value" min="1" value="1">
                         <select id="interval_unit">
-                            <option value="minute">Минуты</option>
-                            <option value="hour">Часы</option>
-                            <option value="day" selected>Дни</option>
-                            <option value="week">Недели</option>
-                            <option value="month">Месяцы</option>
+                            <option value="minute">мин</option>
+                            <option value="hour">ч</option>
+                            <option value="day" selected>дн</option>
+                            <option value="week">нед</option>
+                            <option value="month">мес</option>
                         </select>
                     </div>
-                    <div class="input-hint">Например: 1 день, 2 недели, 1 месяц</div>
                 </div>
                 
-                <button class="menu-button" onclick="addPair()" style="margin-top: 8px;">
-                    ✅ Сохранить пару
-                </button>
+                <button onclick="addPair()">✅ Сохранить</button>
             </div>
         </div>
 
-        <!-- Список пар -->
         <div id="pairsList" style="display: none;">
             <button class="back-button" onclick="showMainMenu()">← Назад</button>
-            
             <div class="card">
-                <div class="card-title">
-                    <i>📋</i> Мои пары
-                </div>
-                
-                <div id="pairsContainer" class="pairs-list">
-                    <div class="empty-state">
-                        <i>📭</i>
-                        <p>У вас пока нет сохраненных пар</p>
-                    </div>
-                </div>
+                <div style="font-size:16px;font-weight:600;margin-bottom:16px;">📋 Мои пары</div>
+                <div id="pairsContainer" class="empty-state">📭 Нет сохраненных пар</div>
             </div>
         </div>
     </div>
 
     <script>
-        // ===== ПОЛУЧЕНИЕ REAL CHAT ID ИЗ TELEGRAM =====
-        let chatId = null;
+        // ===== ПОЛУЧАЕМ REAL CHAT ID =====
         let tg = window.Telegram?.WebApp;
-
-        // Инициализация Telegram WebApp
+        let chatId = 1; // fallback
+        
         if (tg) {
             tg.ready();
             tg.expand();
-            // Получаем реальный ID пользователя из Telegram
             if (tg.initDataUnsafe?.user?.id) {
                 chatId = tg.initDataUnsafe.user.id;
-                localStorage.setItem('chatId', chatId);
-                console.log("✅ Получен Chat ID из Telegram:", chatId);
+                console.log("✅ Chat ID:", chatId);
             }
         }
-
-        function getChatId() {
-            // Если уже есть в памяти
-            if (chatId) return chatId;
-            
-            // Пробуем из localStorage
-            const stored = localStorage.getItem('chatId');
-            if (stored) {
-                chatId = stored;
-                return chatId;
-            }
-            
-            // Если ничего нет - показываем понятную инструкцию
-            const message = "❌ Не удалось определить Chat ID.\n\n" +
-                           "Чтобы получать уведомления:\n" +
-                           "1. Напиши боту @CyberCapitalBot\n" +
-                           "2. Отправь команду /start\n" +
-                           "3. Скопируй число из сообщения\n" +
-                           "4. Введи его сюда:";
-            
-            const id = prompt(message);
-            if (id) {
-                chatId = id;
-                localStorage.setItem('chatId', id);
-                return id;
-            }
-            return null;
-        }
+        console.log("🆔 Используется ID:", chatId);
 
         function showMainMenu() {
-            document.getElementById('mainMenu').style.display = 'block';
-            document.getElementById('addForm').style.display = 'none';
-            document.getElementById('pairsList').style.display = 'none';
-            hideError();
+            mainMenu.style.display = 'block';
+            addForm.style.display = 'none';
+            pairsList.style.display = 'none';
         }
 
         function showAddPair() {
-            document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('addForm').style.display = 'block';
-            document.getElementById('pairsList').style.display = 'none';
-            hideError();
+            mainMenu.style.display = 'none';
+            addForm.style.display = 'block';
+            pairsList.style.display = 'none';
         }
 
         async function showPairs() {
-            document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('addForm').style.display = 'none';
-            document.getElementById('pairsList').style.display = 'block';
+            mainMenu.style.display = 'none';
+            addForm.style.display = 'none';
+            pairsList.style.display = 'block';
             await loadPairs();
         }
 
         function showError(msg) {
             const errorDiv = document.getElementById('formError');
-            errorDiv.style.display = 'flex';
+            errorDiv.style.display = 'block';
             errorDiv.innerHTML = `⚠️ ${msg}`;
-            setTimeout(hideError, 3000);
+            setTimeout(() => errorDiv.style.display = 'none', 3000);
         }
 
-        function hideError() {
-            document.getElementById('formError').style.display = 'none';
-        }
-
-        // Функция для форматирования интервала
         function formatInterval(value, unit) {
-            const names = {
-                'minute': 'мин',
-                'hour': 'ч',
-                'day': 'дн',
-                'week': 'нед',
-                'month': 'мес'
-            };
-            
             if (value === 1) {
                 if (unit === 'minute') return '1 минуту';
                 if (unit === 'hour') return '1 час';
@@ -525,74 +269,54 @@
                 if (unit === 'week') return '1 неделю';
                 if (unit === 'month') return '1 месяц';
             }
-            
-            return `${value} ${names[unit] || ''}`;
+            const names = {minute:'мин', hour:'ч', day:'дн', week:'нед', month:'мес'};
+            return `${value} ${names[unit]}`;
         }
 
         async function loadPairs() {
-            const cid = getChatId();
-            if (!cid) return;
-
             try {
-                const res = await fetch(`/api/pairs/${cid}`);
+                const res = await fetch(`/api/pairs/${chatId}`);
                 const data = await res.json();
-                
                 const container = document.getElementById('pairsContainer');
                 
                 if (!data.pairs || data.pairs.length === 0) {
-                    container.innerHTML = '<div class="empty-state"><i>📭</i><p>Нет сохраненных пар</p></div>';
+                    container.innerHTML = '<div class="empty-state">📭 Нет сохраненных пар</div>';
                     return;
                 }
 
-                container.innerHTML = data.pairs.map(p => {
-                    const status = p.active ? '🟢' : '🔴';
-                    const last = p.last_ratio ? p.last_ratio.toFixed(6) : '—';
-                    return `
-                        <div class="pair-item">
-                            <div class="pair-header">
-                                <span class="pair-name">
-                                    ${status} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}
-                                    <span class="pair-badge">${p.active ? 'Активна' : 'Пауза'}</span>
-                                </span>
-                            </div>
-                            <div class="pair-details">
-                                <span>🎯 ${p.threshold}</span>
-                                <span>⏱ ${formatInterval(p.interval_value, p.interval_unit)}</span>
-                                <span>📊 ${last}</span>
-                            </div>
-                            <div class="pair-actions">
-                                <button class="icon-button" onclick="togglePair(${p.id})">
-                                    ${p.active ? '⏸️' : '▶️'}
-                                </button>
-                                <button class="icon-button delete" onclick="removePair(${p.id})">
-                                    ✖
-                                </button>
-                            </div>
+                container.innerHTML = data.pairs.map(p => `
+                    <div class="pair-item">
+                        <div class="pair-header">
+                            <span class="pair-name">
+                                ${p.active ? '🟢' : '🔴'} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}
+                                <span class="pair-badge">${p.active ? 'Активна' : 'Пауза'}</span>
+                            </span>
                         </div>
-                    `;
-                }).join('');
+                        <div class="pair-details">
+                            <span>🎯 ${p.threshold}</span>
+                            <span>⏱ ${formatInterval(p.interval_value, p.interval_unit)}</span>
+                            <span>📊 ${p.last_ratio?.toFixed(6) || '—'}</span>
+                        </div>
+                        <div class="pair-actions">
+                            <button class="icon-button" onclick="togglePair(${p.id})">${p.active ? '⏸️' : '▶️'}</button>
+                            <button class="icon-button delete" onclick="removePair(${p.id})">✖</button>
+                        </div>
+                    </div>
+                `).join('');
             } catch (e) {
-                showError('Ошибка загрузки: ' + e);
+                showError('Ошибка загрузки');
             }
         }
 
         async function addPair() {
-            const cid = getChatId();
-            if (!cid) return;
-
             const s1 = document.getElementById('symbol1').value.trim().toLowerCase();
             const s2 = document.getElementById('symbol2').value.trim().toLowerCase();
             const th = parseFloat(document.getElementById('threshold').value);
-            const intervalValue = parseInt(document.getElementById('interval_value').value);
-            const intervalUnit = document.getElementById('interval_unit').value;
+            const iv = parseInt(document.getElementById('interval_value').value);
+            const iu = document.getElementById('interval_unit').value;
 
             if (!s1 || !s2 || !th) {
                 showError('Заполни все поля');
-                return;
-            }
-
-            if (intervalValue < 1) {
-                showError('Интервал должен быть больше 0');
                 return;
             }
 
@@ -600,25 +324,14 @@
                 const res = await fetch('/api/add_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        chatId: parseInt(cid),
-                        symbol1: s1,
-                        symbol2: s2,
-                        threshold: th,
-                        interval_value: intervalValue,
-                        interval_unit: intervalUnit
-                    })
+                    body: JSON.stringify({chatId, symbol1: s1, symbol2: s2, threshold: th, 
+                                         interval_value: iv, interval_unit: iu})
                 });
-
                 const data = await res.json();
-                
-                if (data.error) {
-                    showError(data.error);
-                } else {
+                if (data.error) showError(data.error);
+                else {
                     showMainMenu();
-                    if (tg) {
-                        tg.showAlert('✅ Пара добавлена!');
-                    }
+                    if (tg) tg.showAlert('✅ Пара добавлена!');
                 }
             } catch (e) {
                 showError('Ошибка: ' + e);
@@ -626,43 +339,26 @@
         }
 
         async function removePair(pairId) {
-            const cid = getChatId();
-            if (!cid) return;
-
-            if (tg) {
-                tg.showConfirm('Удалить пару?', (confirmed) => {
-                    if (confirmed) {
-                        performRemove(pairId);
-                    }
-                });
-            } else {
-                if (confirm('Удалить пару?')) {
-                    performRemove(pairId);
+            if (!tg || confirm('Удалить пару?')) {
+                try {
+                    await fetch('/api/remove_pair', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({chatId, pairId})
+                    });
+                    await loadPairs();
+                } catch (e) {
+                    showError('Ошибка: ' + e);
                 }
             }
         }
 
-        async function performRemove(pairId) {
-            const cid = getChatId();
-            try {
-                await fetch('/api/remove_pair', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId: parseInt(cid), pairId})
-                });
-                await loadPairs();
-            } catch (e) {
-                showError('Ошибка: ' + e);
-            }
-        }
-
         async function togglePair(pairId) {
-            const cid = getChatId();
             try {
                 await fetch('/api/toggle_pair', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId: parseInt(cid), pairId})
+                    body: JSON.stringify({chatId, pairId})
                 });
                 await loadPairs();
             } catch (e) {
@@ -671,36 +367,16 @@
         }
 
         async function stopAll() {
-            const cid = getChatId();
-            if (!cid) return;
-
-            if (tg) {
-                tg.showConfirm('Остановить все мониторы?', async (confirmed) => {
-                    if (confirmed) {
-                        try {
-                            await fetch('/api/stop_all', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({chatId: parseInt(cid)})
-                            });
-                            tg.showAlert('⏹ Все мониторы остановлены');
-                        } catch (e) {
-                            showError('Ошибка: ' + e);
-                        }
-                    }
-                });
-            } else {
-                if (confirm('Остановить все мониторы?')) {
-                    try {
-                        await fetch('/api/stop_all', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({chatId: parseInt(cid)})
-                        });
-                        alert('⏹ Все мониторы остановлены');
-                    } catch (e) {
-                        showError('Ошибка: ' + e);
-                    }
+            if (!tg || confirm('Остановить все мониторы?')) {
+                try {
+                    await fetch('/api/stop_all', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({chatId})
+                    });
+                    if (tg) tg.showAlert('⏹ Все остановлено');
+                } catch (e) {
+                    showError('Ошибка: ' + e);
                 }
             }
         }
