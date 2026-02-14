@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--tg-theme-button-color, #40a7e3);
+        }
+        
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            border-radius: 8px;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        button {
+            background: var(--tg-theme-button-color, #40a7e3);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        
+        button.secondary {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .pair-item {
+            background: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pair-info {
+            flex: 1;
+        }
+        
+        .pair-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .pair-details {
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #666);
+        }
+        
+        .pair-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 8px;
+        }
+        
+        .status-active {
+            background: #2ecc71;
+        }
+        
+        .status-inactive {
+            background: #e74c3c;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        
+        .menu-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .menu-row button {
+            flex: 1;
+            margin: 0;
+        }
+        
+        .back-btn {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Crypto Monitor</h1>
+        
+        <div id="mainMenu">
+            <div class="menu-row">
+                <button onclick="showAddPair()">➕ Добавить пару</button>
+                <button onclick="showPairs()" class="secondary">📋 Мои пары</button>
+            </div>
+            <div class="menu-row">
+                <button onclick="stopAll()">⏹ Остановить все</button>
+            </div>
+        </div>
+        
+        <div id="addPairForm" style="display: none;">
+            <div class="card">
+                <h3>📊 Добавление пары</h3>
+                
+                <div class="form-group">
+                    <label>Первый тикер:</label>
+                    <input type="text" id="symbol1" placeholder="например: paxgusdt">
+                </div>
+                
+                <div class="form-group">
+                    <label>Второй тикер:</label>
+                    <input type="text" id="symbol2" placeholder="например: xautusdt">
+                </div>
+                
+                <div class="form-group">
+                    <label>Пороговое отношение:</label>
+                    <input type="number" id="threshold" step="0.0001" value="1.0048">
+                </div>
+                
+                <button onclick="addPair()">✅ Сохранить</button>
+                <button onclick="showMainMenu()" class="secondary">◀️ Назад</button>
+            </div>
+        </div>
+        
+        <div id="pairsList" style="display: none;">
+            <div class="card">
+                <h3>📋 Мои пары</h3>
+                <div id="pairsContainer"></div>
+                <button onclick="showMainMenu()" class="secondary" style="margin-top: 16px;">◀️ Назад</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Получаем Chat ID из Telegram WebApp
+        let tg = window.Telegram?.WebApp;
+        let chatId = null;
+        
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            // В реальном Mini App данные пользователя доступны через tg.initData
+            // Но для простоты будем передавать chatId через URL
+        }
+        
+        // Функция для получения Chat ID (нужно передавать через URL)
+        function getChatId() {
+            // В реальном приложении нужно получать из initData
+            // Пока просто спрашиваем или берем из localStorage
+            let stored = localStorage.getItem('chatId');
+            if (stored) return stored;
+            
+            let id = prompt("Введи свой Chat ID (можно скопировать из сообщения бота):");
+            if (id) {
+                localStorage.setItem('chatId', id);
+                return id;
+            }
+            return null;
+        }
+        
+        function showMainMenu() {
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('addPairForm').style.display = 'none';
+            document.getElementById('pairsList').style.display = 'none';
+        }
+        
+        function showAddPair() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('addPairForm').style.display = 'block';
+            document.getElementById('pairsList').style.display = 'none';
+        }
+        
+        async function showPairs() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('addPairForm').style.display = 'none';
+            document.getElementById('pairsList').style.display = 'block';
+            
+            await loadPairs();
+        }
+        
+        async function loadPairs() {
+            const chatId = getChatId();
+            if (!chatId) return;
+            
+            try {
+                const response = await fetch(`/api/pairs/${chatId}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('pairsContainer');
+                container.innerHTML = '';
+                
+                if (data.pairs.length === 0) {
+                    container.innerHTML = '<p>Нет сохраненных пар</p>';
+                    return;
+                }
+                
+                data.pairs.forEach(pair => {
+                    const div = document.createElement('div');
+                    div.className = 'pair-item';
+                    
+                    const status = pair.active ? '🟢' : '🔴';
+                    const lastRatio = pair.last_ratio ? pair.last_ratio.toFixed(6) : '—';
+                    
+                    div.innerHTML = `
+                        <div class="pair-info">
+                            <div class="pair-name">${status} ${pair.symbol1.toUpperCase()}/${pair.symbol2.toUpperCase()}</div>
+                            <div class="pair-details">Порог: ${pair.threshold} | Последнее: ${lastRatio}</div>
+                        </div>
+                        <button class="delete-btn" onclick="removePair(${pair.id})">✖</button>
+                    `;
+                    
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+            }
+        }
+        
+        async function addPair() {
+            const chatId = getChatId();
+            if (!chatId) return;
+            
+            const symbol1 = document.getElementById('symbol1').value;
+            const symbol2 = document.getElementById('symbol2').value;
+            const threshold = parseFloat(document.getElementById('threshold').value);
+            
+            if (!symbol1 || !symbol2 || !threshold) {
+                alert('Заполни все поля');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/add_pair', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({chatId, symbol1, symbol2, threshold})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Пара добавлена!');
+                    showMainMenu();
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error);
+            }
+        }
+        
+        async function removePair(pairId) {
+            const chatId = getChatId();
+            if (!chatId) return;
+            
+            if (!confirm('Удалить пару?')) return;
+            
+            try {
+                const response = await fetch('/api/remove_pair', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({chatId, pairId})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    await loadPairs();
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error);
+            }
+        }
+        
+        async function stopAll() {
+            const chatId = getChatId();
+            if (!chatId) return;
+            
+            if (!confirm('Остановить все мониторы?')) return;
+            
+            try {
+                const response = await fetch('/api/stop_all', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({chatId})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('⏹ Все мониторы остановлены');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error);
+            }
+        }
+    </script>
+</body>
+</html>
