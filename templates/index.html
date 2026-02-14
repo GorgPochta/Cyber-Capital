@@ -5,162 +5,480 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Monitor</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--tg-theme-bg-color, #f5f5f5);
-            color: var(--tg-theme-text-color, #000);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #0a0f14);
+            color: var(--tg-theme-text-color, #e4e6eb);
             padding: 16px;
+            min-height: 100vh;
         }
-        .container { max-width: 600px; margin: 0 auto; }
-        .card {
-            background: var(--tg-theme-secondary-bg-color, #fff);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
         }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: var(--tg-theme-button-color, #40a7e3);
+
+        /* Хедер */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-        h3 { margin-bottom: 12px; }
-        .form-group { margin-bottom: 12px; }
-        label {
-            display: block;
-            margin-bottom: 4px;
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #2277ff, #00c2ff);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+
+        .logo-text {
+            font-weight: 600;
+            font-size: 18px;
+            background: linear-gradient(135deg, #fff, #a0b3cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            background: rgba(46, 204, 113, 0.15);
+            color: #2ecc71;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--tg-theme-hint-color, #ddd);
-            border-radius: 8px;
-            font-size: 16px;
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #2ecc71;
+            border-radius: 50%;
+            display: inline-block;
         }
-        button {
-            background: var(--tg-theme-button-color, #40a7e3);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
+
+        /* Карточки */
+        .card {
+            background: var(--tg-theme-secondary-bg-color, #1a1f26);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-title {
             font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-        button.secondary {
-            background: var(--tg-theme-secondary-bg-color, #e0e0e0);
-            color: var(--tg-theme-text-color, #000);
-        }
-        .menu-row {
+            margin-bottom: 16px;
+            color: #9aa6b8;
             display: flex;
+            align-items: center;
             gap: 8px;
+        }
+
+        .card-title i {
+            font-style: normal;
+            color: #2277ff;
+        }
+
+        /* Меню */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
             margin-bottom: 16px;
         }
-        .menu-row button { flex: 1; margin: 0; }
-        .pair-item {
-            background: var(--tg-theme-bg-color, #fafafa);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
+
+        .menu-button {
+            background: linear-gradient(135deg, #2277ff, #00c2ff);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 14px 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(34, 119, 255, 0.2);
         }
-        .pair-header {
+
+        .menu-button.secondary {
+            background: #262f3d;
+            color: #e4e6eb;
+            box-shadow: none;
+        }
+
+        .menu-button.secondary:hover {
+            background: #2f3a4a;
+        }
+
+        .menu-button.danger {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
+        }
+
+        /* Форма */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #9aa6b8;
+        }
+
+        .form-label span {
+            color: #ff4757;
+            font-size: 12px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f151c;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            font-size: 15px;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2277ff;
+            background: #141c26;
+        }
+
+        input::placeholder {
+            color: #4a5568;
+        }
+
+        .input-hint {
+            font-size: 11px;
+            color: #5f6b7a;
+            margin-top: 4px;
+            margin-left: 4px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-row input {
+            flex: 1;
+        }
+
+        .input-row span {
+            color: #9aa6b8;
+            font-weight: 500;
+        }
+
+        .ratio-input {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ratio-input input {
+            flex: 1;
+        }
+
+        .ratio-input button {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: #1e293b;
+            border: none;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Список пар */
+        .pairs-list {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #2277ff #1a1f26;
+        }
+
+        .pairs-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .pairs-list::-webkit-scrollbar-track {
+            background: #1a1f26;
+        }
+
+        .pairs-list::-webkit-scrollbar-thumb {
+            background: #2277ff;
+            border-radius: 4px;
+        }
+
+        .pair-item {
+            background: #0f151c;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
         }
-        .pair-name {
+
+        .pair-info h4 {
+            font-size: 16px;
             font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pair-badge {
+            background: #1e293b;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #9aa6b8;
+        }
+
+        .pair-details {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+            color: #9aa6b8;
+        }
+
+        .pair-details span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .pair-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: #1e293b;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 16px;
         }
-        .status {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
+
+        .icon-button.delete {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
         }
-        .status-active { background: #2ecc71; }
-        .status-inactive { background: #e74c3c; }
-        .pair-details {
+
+        .icon-button.active {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #5f6b7a;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+            opacity: 0.3;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 12px;
             font-size: 14px;
-            color: var(--tg-theme-hint-color, #666);
-            margin-bottom: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .delete-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 4px 8px;
+
+        .alert.error {
+            background: rgba(255, 71, 87, 0.1);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.2);
+        }
+
+        .alert.success {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: #9aa6b8;
+            font-size: 14px;
+            margin-bottom: 16px;
             cursor: pointer;
+            background: none;
+            border: none;
         }
-        .error { color: #e74c3c; margin-bottom: 8px; }
-        .success { color: #27ae60; margin-bottom: 8px; }
+
+        .back-button:hover {
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Crypto Monitor</h1>
-        
+        <!-- Хедер -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                <span class="logo-text">CryptoMonitor</span>
+            </div>
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                Live
+            </div>
+        </div>
+
+        <!-- Основное меню (всегда видно) -->
         <div id="mainMenu">
-            <div class="menu-row">
-                <button onclick="showAddPair()">➕ Добавить</button>
-                <button onclick="showPairs()" class="secondary">📋 Мои</button>
+            <div class="menu-grid">
+                <button class="menu-button" onclick="showAddPair()">
+                    ➕ Добавить пару
+                </button>
+                <button class="menu-button secondary" onclick="showPairs()">
+                    📋 Мои пары
+                </button>
             </div>
-            <div class="menu-row">
-                <button onclick="stopAll()">⏹ Стоп все</button>
-            </div>
+            <button class="menu-button danger" onclick="stopAll()">
+                ⏹ Остановить все
+            </button>
         </div>
-        
+
+        <!-- Форма добавления пары -->
         <div id="addForm" style="display: none;">
+            <button class="back-button" onclick="showMainMenu()">← Назад</button>
+            
             <div class="card">
-                <h3>➕ Новая пара</h3>
-                <div id="formError" class="error"></div>
+                <div class="card-title">
+                    <i>📈</i> Новая пара
+                </div>
+                
+                <div id="formError" class="alert error" style="display: none;"></div>
                 
                 <div class="form-group">
-                    <label>Первый тикер:</label>
-                    <input type="text" id="symbol1" placeholder="paxgusdt">
+                    <div class="form-label">
+                        <span>Первый тикер</span>
+                        <span>обязательно</span>
+                    </div>
+                    <input type="text" id="symbol1" placeholder="например: paxgusdt">
+                    <div class="input-hint">Должен заканчиваться на usdt</div>
                 </div>
                 
                 <div class="form-group">
-                    <label>Второй тикер:</label>
-                    <input type="text" id="symbol2" placeholder="xautusdt">
+                    <div class="form-label">
+                        <span>Второй тикер</span>
+                        <span>обязательно</span>
+                    </div>
+                    <input type="text" id="symbol2" placeholder="например: xautusdt">
+                    <div class="input-hint">Должен заканчиваться на usdt</div>
                 </div>
                 
                 <div class="form-group">
-                    <label>Порог:</label>
-                    <input type="number" id="threshold" step="0.0001" value="1.0048">
+                    <div class="form-label">
+                        <span>Пороговое отношение</span>
+                        <span>обязательно</span>
+                    </div>
+                    <div class="ratio-input">
+                        <input type="number" id="threshold" step="0.0001" value="1.0048">
+                        <button onclick="adjustThreshold(0.0001)">▲</button>
+                    </div>
+                    <div class="input-hint">Сигнал сработает при достижении этого значения</div>
                 </div>
                 
-                <button onclick="addPair()">✅ Сохранить</button>
-                <button onclick="showMainMenu()" class="secondary">◀️ Назад</button>
+                <button class="menu-button" onclick="addPair()" style="margin-top: 8px;">
+                    ✅ Сохранить пару
+                </button>
             </div>
         </div>
-        
+
+        <!-- Список пар -->
         <div id="pairsList" style="display: none;">
+            <button class="back-button" onclick="showMainMenu()">← Назад</button>
+            
             <div class="card">
-                <h3>📋 Мои пары</h3>
-                <div id="pairsContainer"></div>
-                <button onclick="showMainMenu()" class="secondary" style="margin-top: 12px;">◀️ Назад</button>
+                <div class="card-title">
+                    <i>📋</i> Мои пары
+                </div>
+                
+                <div id="pairsContainer" class="pairs-list">
+                    <div class="empty-state">
+                        <i>📭</i>
+                        <p>У вас пока нет сохраненных пар</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    
+
     <script>
-        let chatId = null;
-        
+        let chatId = localStorage.getItem('chatId');
+        let tg = window.Telegram?.WebApp;
+
+        // Инициализация Telegram WebApp
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            chatId = tg.initDataUnsafe?.user?.id || chatId;
+        }
+
         function getChatId() {
             if (chatId) return chatId;
-            const stored = localStorage.getItem('chatId');
-            if (stored) {
-                chatId = stored;
-                return chatId;
-            }
             const id = prompt("Введи Chat ID (из сообщения бота):");
             if (id) {
                 chatId = id;
@@ -169,83 +487,109 @@
             }
             return null;
         }
-        
+
         function showMainMenu() {
             document.getElementById('mainMenu').style.display = 'block';
             document.getElementById('addForm').style.display = 'none';
             document.getElementById('pairsList').style.display = 'none';
-            document.getElementById('formError').innerHTML = '';
+            hideError();
         }
-        
+
         function showAddPair() {
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('addForm').style.display = 'block';
             document.getElementById('pairsList').style.display = 'none';
+            hideError();
         }
-        
+
         async function showPairs() {
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('addForm').style.display = 'none';
             document.getElementById('pairsList').style.display = 'block';
             await loadPairs();
         }
-        
+
+        function showError(msg) {
+            const errorDiv = document.getElementById('formError');
+            errorDiv.style.display = 'flex';
+            errorDiv.innerHTML = `⚠️ ${msg}`;
+            setTimeout(hideError, 3000);
+        }
+
+        function hideError() {
+            document.getElementById('formError').style.display = 'none';
+        }
+
+        function adjustThreshold(step) {
+            const input = document.getElementById('threshold');
+            input.value = (parseFloat(input.value) + step).toFixed(4);
+        }
+
         async function loadPairs() {
             const cid = getChatId();
             if (!cid) return;
-            
+
             try {
                 const res = await fetch(`/api/pairs/${cid}`);
                 const data = await res.json();
                 
                 const container = document.getElementById('pairsContainer');
-                container.innerHTML = '';
                 
                 if (!data.pairs || data.pairs.length === 0) {
-                    container.innerHTML = '<p>Нет сохраненных пар</p>';
-                    return;
-                }
-                
-                data.pairs.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'pair-item';
-                    
-                    const status = p.active ? '🟢' : '🔴';
-                    const last = p.last_ratio ? p.last_ratio.toFixed(6) : '—';
-                    
-                    div.innerHTML = `
-                        <div class="pair-header">
-                            <span class="pair-name">${status} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}</span>
-                            <button class="delete-btn" onclick="removePair(${p.id})">✖</button>
-                        </div>
-                        <div class="pair-details">
-                            Порог: ${p.threshold}<br>
-                            Текущее: ${last}
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i>📭</i>
+                            <p>У вас пока нет сохраненных пар</p>
                         </div>
                     `;
-                    
-                    container.appendChild(div);
-                });
+                    return;
+                }
+
+                container.innerHTML = data.pairs.map(p => {
+                    const status = p.active ? '🟢' : '🔴';
+                    const last = p.last_ratio ? p.last_ratio.toFixed(6) : '—';
+                    return `
+                        <div class="pair-item">
+                            <div class="pair-info">
+                                <h4>
+                                    ${status} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}
+                                    <span class="pair-badge">${p.active ? 'Активна' : 'Остановлена'}</span>
+                                </h4>
+                                <div class="pair-details">
+                                    <span>🎯 ${p.threshold}</span>
+                                    <span>📊 ${last}</span>
+                                </div>
+                            </div>
+                            <div class="pair-actions">
+                                <button class="icon-button ${p.active ? 'active' : ''}" 
+                                        onclick="togglePair(${p.id})">
+                                    ${p.active ? '⏸️' : '▶️'}
+                                </button>
+                                <button class="icon-button delete" onclick="removePair(${p.id})">
+                                    ✖
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             } catch (e) {
-                alert('Ошибка загрузки: ' + e);
+                showError('Ошибка загрузки: ' + e);
             }
         }
-        
+
         async function addPair() {
             const cid = getChatId();
             if (!cid) return;
-            
-            const s1 = document.getElementById('symbol1').value;
-            const s2 = document.getElementById('symbol2').value;
+
+            const s1 = document.getElementById('symbol1').value.trim().toLowerCase();
+            const s2 = document.getElementById('symbol2').value.trim().toLowerCase();
             const th = parseFloat(document.getElementById('threshold').value);
-            
-            document.getElementById('formError').innerHTML = '';
-            
+
             if (!s1 || !s2) {
-                document.getElementById('formError').innerHTML = 'Заполни все поля';
+                showError('Заполни все поля');
                 return;
             }
-            
+
             try {
                 const res = await fetch('/api/add_pair', {
                     method: 'POST',
@@ -257,26 +601,42 @@
                         threshold: th
                     })
                 });
-                
+
                 const data = await res.json();
                 
                 if (data.error) {
-                    document.getElementById('formError').innerHTML = data.error;
+                    showError(data.error);
                 } else {
-                    alert('✅ Пара добавлена');
                     showMainMenu();
+                    // Показываем уведомление об успехе
+                    if (tg) {
+                        tg.showAlert('✅ Пара успешно добавлена!');
+                    }
                 }
             } catch (e) {
-                document.getElementById('formError').innerHTML = 'Ошибка: ' + e;
+                showError('Ошибка: ' + e);
             }
         }
-        
+
         async function removePair(pairId) {
             const cid = getChatId();
             if (!cid) return;
-            
-            if (!confirm('Удалить пару?')) return;
-            
+
+            if (tg) {
+                tg.showConfirm('Удалить пару?', (confirmed) => {
+                    if (confirmed) {
+                        performRemove(pairId);
+                    }
+                });
+            } else {
+                if (confirm('Удалить пару?')) {
+                    performRemove(pairId);
+                }
+            }
+        }
+
+        async function performRemove(pairId) {
+            const cid = getChatId();
             try {
                 await fetch('/api/remove_pair', {
                     method: 'POST',
@@ -285,25 +645,56 @@
                 });
                 await loadPairs();
             } catch (e) {
-                alert('Ошибка: ' + e);
+                showError('Ошибка: ' + e);
             }
         }
-        
+
+        async function togglePair(pairId) {
+            const cid = getChatId();
+            try {
+                await fetch('/api/restart_pair', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({chatId: parseInt(cid), pairId})
+                });
+                await loadPairs();
+            } catch (e) {
+                showError('Ошибка: ' + e);
+            }
+        }
+
         async function stopAll() {
             const cid = getChatId();
             if (!cid) return;
-            
-            if (!confirm('Остановить все мониторы?')) return;
-            
-            try {
-                await fetch('/api/stop_all', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({chatId: parseInt(cid)})
+
+            if (tg) {
+                tg.showConfirm('Остановить все мониторы?', async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            await fetch('/api/stop_all', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({chatId: parseInt(cid)})
+                            });
+                            tg.showAlert('⏹ Все мониторы остановлены');
+                        } catch (e) {
+                            showError('Ошибка: ' + e);
+                        }
+                    }
                 });
-                alert('⏹ Все остановлено');
-            } catch (e) {
-                alert('Ошибка: ' + e);
+            } else {
+                if (confirm('Остановить все мониторы?')) {
+                    try {
+                        await fetch('/api/stop_all', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({chatId: parseInt(cid)})
+                        });
+                        alert('⏹ Все мониторы остановлены');
+                    } catch (e) {
+                        showError('Ошибка: ' + e);
+                    }
+                }
             }
         }
     </script>
