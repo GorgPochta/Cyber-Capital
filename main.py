@@ -12,7 +12,7 @@ import os
 
 # ===== НАСТРОЙКИ =====
 BOT_TOKEN = "5860512200:AAE4tR8aVkpud3zldj1mV2z9jUJbhDKbQ8c"
-WEBAPP_URL = "https://твой-сервис.onrender.com"  # ЗАМЕНИ НА СВОЙ АДРЕС!
+WEBAPP_URL = "https://cyber-capital.onrender.com"  # ЗАМЕНИ НА СВОЙ АДРЕС!
 # =====================
 
 # Настройка логирования
