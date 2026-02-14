@@ -135,7 +135,7 @@ class PairMonitor:
                         
                         logging.info(f"📊 {self.symbol1}/{self.symbol2} = {ratio:.6f}")
                         
-                        if ratio >= self.threshold:
+ if ratio >= self.threshold:
     # Формируем сообщение с кнопками
     signal = (
         f"🚨 <b>СИГНАЛ!</b>\n\n"
@@ -147,28 +147,24 @@ class PairMonitor:
     )
     
     # Кнопки управления
-    keyboard = {
-        "inline_keyboard": [[
-            {"text": "⏸ Пауза", "callback_data": f"pause_{self.pair_id}"},
-            {"text": "⏹ Стоп", "callback_data": f"stop_{self.pair_id}"}
-        ]]
-    }
+    keyboard = [[
+        InlineKeyboardButton("⏸ Пауза", callback_data=f"pause_{self.pair_id}"),
+        InlineKeyboardButton("⏹ Стоп", callback_data=f"stop_{self.pair_id}")
+    ]]
     
-    # Отправляем через прямой API запрос
+    # Отправляем сигнал
     try:
-        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-        payload = {
-            "chat_id": self.chat_id,
-            "text": signal,
-            "parse_mode": "HTML",
-            "reply_markup": keyboard
-        }
-        response = requests.post(url, json=payload, timeout=10)
-        
-        if response.status_code == 200:
+        if self.bot_app and self.bot_app.bot:
+            asyncio.run_coroutine_threadsafe(
+                self.bot_app.bot.send_message(
+                    chat_id=self.chat_id,
+                    text=signal,
+                    reply_markup=InlineKeyboardMarkup(keyboard),
+                    parse_mode='HTML'
+                ),
+                self.bot_app.loop
+            )
             logging.info(f"✅ Сигнал отправлен для пары {self.pair_id}")
-        else:
-            logging.error(f"❌ Ошибка отправки: {response.text}")
     except Exception as e:
         logging.error(f"❌ Ошибка при отправке сигнала: {e}")
                     
