@@ -440,6 +440,16 @@
                     </div>
                     <div class="input-hint">Сигнал сработает при достижении этого значения</div>
                 </div>
+
+                <!-- НОВОЕ ПОЛЕ: Интервал в минутах -->
+                <div class="form-group">
+                    <div class="form-label">
+                        <span>Интервал проверки (минуты)</span>
+                        <span>обязательно</span>
+                    </div>
+                    <input type="number" id="interval" min="1" max="60" value="1">
+                    <div class="input-hint">Как часто проверять цену (от 1 до 60 минут)</div>
+                </div>
                 
                 <button class="menu-button" onclick="addPair()" style="margin-top: 8px;">
                     ✅ Сохранить пару
@@ -556,8 +566,9 @@
                                     <span class="pair-badge">${p.active ? 'Активна' : 'Остановлена'}</span>
                                 </h4>
                                 <div class="pair-details">
-                                    <span>🎯 ${p.threshold}</span>
-                                    <span>📊 ${last}</span>
+                                    <span>🎯 Порог: ${p.threshold}</span>
+                                    <span>⏱ Интервал: ${p.interval || 1} мин</span>
+                                    <span>📊 Текущее: ${last}</span>
                                 </div>
                             </div>
                             <div class="pair-actions">
@@ -584,9 +595,15 @@
             const s1 = document.getElementById('symbol1').value.trim().toLowerCase();
             const s2 = document.getElementById('symbol2').value.trim().toLowerCase();
             const th = parseFloat(document.getElementById('threshold').value);
+            const interval = parseInt(document.getElementById('interval').value) || 1;
 
             if (!s1 || !s2) {
                 showError('Заполни все поля');
+                return;
+            }
+
+            if (interval < 1 || interval > 60) {
+                showError('Интервал должен быть от 1 до 60 минут');
                 return;
             }
 
@@ -598,7 +615,8 @@
                         chatId: parseInt(cid),
                         symbol1: s1,
                         symbol2: s2,
-                        threshold: th
+                        threshold: th,
+                        interval: interval
                     })
                 });
 
@@ -608,7 +626,6 @@
                     showError(data.error);
                 } else {
                     showMainMenu();
-                    // Показываем уведомление об успехе
                     if (tg) {
                         tg.showAlert('✅ Пара успешно добавлена!');
                     }
