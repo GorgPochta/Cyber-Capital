@@ -7,11 +7,11 @@ Mini App — веб-интерфейс внутри Telegram
 Уведомления с указанием пары
 
 📦 Структура проекта:
-crypto-monitor/
-├── main.py              # Основной бот + Flask для Mini App
-├── monitor.py           # Логика мониторинга
+cryptomonitorbot/
+├── main.py
+├── monitor.py
+├── requirements.txt
 ├── templates/
-│   └── index.html       # Веб-интерфейс Mini App
-├── static/
-│   └── style.css        # Стили (опционально)
-└── requirements.txt     # Зависимости
+│   └── index.html
+└── static/
+    └── style.css (опционально)
