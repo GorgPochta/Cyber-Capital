@@ -136,33 +136,41 @@ class PairMonitor:
                         logging.info(f"📊 {self.symbol1}/{self.symbol2} = {ratio:.6f}")
                         
                         if ratio >= self.threshold:
-                            # Формируем сообщение с кнопками
-                            signal = (
-                                f"🚨 <b>СИГНАЛ!</b>\n\n"
-                                f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
-                                f"<b>Отношение:</b> {ratio:.6f}\n"
-                                f"<b>Порог:</b> {self.threshold}\n"
-                                f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
-                                f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
-                            )
-                            
-                            # Кнопки управления
-                            keyboard = [[
-                                InlineKeyboardButton("⏸ Пауза", callback_data=f"pause_{self.pair_id}"),
-                                InlineKeyboardButton("⏹ Стоп", callback_data=f"stop_{self.pair_id}")
-                            ]]
-                            
-                            if self.bot_app and self.bot_app.loop:
-                                asyncio.run_coroutine_threadsafe(
-                                    self.bot_app.bot.send_message(
-                                        chat_id=self.chat_id,
-                                        text=signal,
-                                        reply_markup=InlineKeyboardMarkup(keyboard),
-                                        parse_mode='HTML'
-                                    ),
-                                    self.bot_app.loop
-                                )
-                                logging.info(f"✅ Сигнал отправлен для пары {self.pair_id}")
+    # Формируем сообщение с кнопками
+    signal = (
+        f"🚨 <b>СИГНАЛ!</b>\n\n"
+        f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
+        f"<b>Отношение:</b> {ratio:.6f}\n"
+        f"<b>Порог:</b> {self.threshold}\n"
+        f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
+        f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
+    )
+    
+    # Кнопки управления
+    keyboard = {
+        "inline_keyboard": [[
+            {"text": "⏸ Пауза", "callback_data": f"pause_{self.pair_id}"},
+            {"text": "⏹ Стоп", "callback_data": f"stop_{self.pair_id}"}
+        ]]
+    }
+    
+    # Отправляем через прямой API запрос
+    try:
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+        payload = {
+            "chat_id": self.chat_id,
+            "text": signal,
+            "parse_mode": "HTML",
+            "reply_markup": keyboard
+        }
+        response = requests.post(url, json=payload, timeout=10)
+        
+        if response.status_code == 200:
+            logging.info(f"✅ Сигнал отправлен для пары {self.pair_id}")
+        else:
+            logging.error(f"❌ Ошибка отправки: {response.text}")
+    except Exception as e:
+        logging.error(f"❌ Ошибка при отправке сигнала: {e}")
                     
                     # Устанавливаем следующую проверку
                     self.next_check = self.get_next_check_time()
