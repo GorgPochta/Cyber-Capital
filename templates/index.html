@@ -432,18 +432,42 @@
     </div>
 
     <script>
-        let chatId = localStorage.getItem('chatId');
+        // ===== ПОЛУЧЕНИЕ REAL CHAT ID ИЗ TELEGRAM =====
+        let chatId = null;
         let tg = window.Telegram?.WebApp;
 
+        // Инициализация Telegram WebApp
         if (tg) {
             tg.ready();
             tg.expand();
-            chatId = tg.initDataUnsafe?.user?.id || chatId;
+            // Получаем реальный ID пользователя из Telegram
+            if (tg.initDataUnsafe?.user?.id) {
+                chatId = tg.initDataUnsafe.user.id;
+                localStorage.setItem('chatId', chatId);
+                console.log("✅ Получен Chat ID из Telegram:", chatId);
+            }
         }
 
         function getChatId() {
+            // Если уже есть в памяти
             if (chatId) return chatId;
-            const id = prompt("Введи Chat ID (из сообщения бота):");
+            
+            // Пробуем из localStorage
+            const stored = localStorage.getItem('chatId');
+            if (stored) {
+                chatId = stored;
+                return chatId;
+            }
+            
+            // Если ничего нет - показываем понятную инструкцию
+            const message = "❌ Не удалось определить Chat ID.\n\n" +
+                           "Чтобы получать уведомления:\n" +
+                           "1. Напиши боту @CyberCapitalBot\n" +
+                           "2. Отправь команду /start\n" +
+                           "3. Скопируй число из сообщения\n" +
+                           "4. Введи его сюда:";
+            
+            const id = prompt(message);
             if (id) {
                 chatId = id;
                 localStorage.setItem('chatId', id);
