@@ -18,29 +18,73 @@ RENDER_URL = "https://cyber-capital.onrender.com"
 PORT = int(os.environ.get('PORT', 10000))
 # =====================
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Настройка логирования
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
+# Создаем Flask приложение
 app = Flask(__name__)
-bot_app = None
-monitors = {}
 
+# Глобальные объекты
+bot_app = None
+monitors = {}  # chat_id -> список мониторов
+
+# ===== ПРОВЕРКА ТИКЕРОВ =====
 def validate_symbol(symbol):
+    """Проверяет существование тикера на Bybit"""
     try:
-        response = requests.get(f'https://api.bybit.com/v5/market/tickers', 
-                               params={'category': 'linear', 'symbol': symbol.upper()}, timeout=5)
+        response = requests.get(
+            f'https://api.bybit.com/v5/market/tickers',
+            params={'category': 'linear', 'symbol': symbol.upper()},
+            timeout=5
+        )
         if response.status_code == 200:
             data = response.json()
             return data['retCode'] == 0 and len(data['result']['list']) > 0
-    except: pass
+    except Exception as e:
+        logging.error(f"Ошибка проверки тикера {symbol}: {e}")
     return False
 
+# ===== ФУНКЦИЯ ФОРМАТИРОВАНИЯ ИНТЕРВАЛА =====
 def format_interval(value, unit):
-    names = {'minute': 'мин', 'hour': 'ч', 'day': 'дн', 'week': 'нед', 'month': 'мес'}
+    """Форматирует интервал для отображения"""
+    names = {
+        'minute': 'мин',
+        'hour': 'ч',
+        'day': 'дн',
+        'week': 'нед',
+        'month': 'мес'
+    }
     if value == 1:
-        return {'minute': '1 минуту', 'hour': '1 час', 'day': '1 день', 
-                'week': '1 неделю', 'month': '1 месяц'}.get(unit, f'1 {names[unit]}')
-    return f'{value} {names.get(unit, "")}'
+        if unit == 'minute': return '1 минуту'
+        elif unit == 'hour': return '1 час'
+        elif unit == 'day': return '1 день'
+        elif unit == 'week': return '1 неделю'
+        elif unit == 'month': return '1 месяц'
+    else:
+        if unit == 'minute': return f'{value} мин'
+        elif unit == 'hour': return f'{value} ч'
+        elif unit == 'day': return f'{value} дн'
+        elif unit == 'week': return f'{value} нед'
+        elif unit == 'month': return f'{value} мес'
+    return f"{value} {names.get(unit, '')}"
 
+# ===== ОБРАБОТЧИК КОМАНДЫ START =====
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /start"""
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    await update.message.reply_text(
+        f"👋 Привет, {user.first_name}!\n\n"
+        f"Твой Chat ID: <code>{chat_id}</code>\n\n"
+        f"⬇️ Используй кнопку в меню, чтобы открыть Mini App",
+        parse_mode='HTML'
+    )
+    logging.info(f"✅ Команда /start от {chat_id}")
+
+# ===== КЛАСС МОНИТОРА =====
 class PairMonitor:
     def __init__(self, chat_id, pair_id, symbol1, symbol2, threshold, interval_value, interval_unit, bot_app):
         self.chat_id = chat_id
@@ -58,26 +102,38 @@ class PairMonitor:
         logging.info(f"✅ Создан монитор {symbol1}/{symbol2} для {chat_id}")
     
     def fetch_price(self, symbol):
+        """Получает цену с Bybit"""
         try:
-            response = requests.get(f'https://api.bybit.com/v5/market/tickers',
-                                   params={'category': 'linear', 'symbol': symbol.upper()}, timeout=5)
+            response = requests.get(
+                f'https://api.bybit.com/v5/market/tickers',
+                params={'category': 'linear', 'symbol': symbol.upper()},
+                timeout=5
+            )
             if response.status_code == 200:
                 data = response.json()
                 if data['retCode'] == 0 and data['result']['list']:
                     return float(data['result']['list'][0]['lastPrice'])
-        except: pass
+        except Exception as e:
+            logging.error(f"Ошибка получения цены {symbol}: {e}")
         return None
     
     def get_next_check(self):
+        """Вычисляет время следующей проверки"""
         now = datetime.now()
-        if self.interval_unit == 'minute': return now + timedelta(minutes=self.interval_value)
-        if self.interval_unit == 'hour': return now + timedelta(hours=self.interval_value)
-        if self.interval_unit == 'day': return now + timedelta(days=self.interval_value)
-        if self.interval_unit == 'week': return now + timedelta(weeks=self.interval_value)
-        if self.interval_unit == 'month': return now + timedelta(days=30 * self.interval_value)
+        if self.interval_unit == 'minute':
+            return now + timedelta(minutes=self.interval_value)
+        elif self.interval_unit == 'hour':
+            return now + timedelta(hours=self.interval_value)
+        elif self.interval_unit == 'day':
+            return now + timedelta(days=self.interval_value)
+        elif self.interval_unit == 'week':
+            return now + timedelta(weeks=self.interval_value)
+        elif self.interval_unit == 'month':
+            return now + timedelta(days=30 * self.interval_value)
         return now + timedelta(hours=1)
     
     def check_loop(self):
+        """Основной цикл проверки"""
         while self.running:
             try:
                 now = datetime.now()
@@ -91,12 +147,14 @@ class PairMonitor:
                         logging.info(f"📊 {self.symbol1}/{self.symbol2} = {ratio:.6f}")
                         
                         if ratio >= self.threshold:
-                            signal = (f"🚨 <b>СИГНАЛ!</b>\n\n"
-                                    f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
-                                    f"<b>Отношение:</b> {ratio:.6f}\n"
-                                    f"<b>Порог:</b> {self.threshold}\n"
-                                    f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
-                                    f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}")
+                            signal = (
+                                f"🚨 <b>СИГНАЛ!</b>\n\n"
+                                f"<b>Пара:</b> {self.symbol1.upper()}/{self.symbol2.upper()}\n"
+                                f"<b>Отношение:</b> {ratio:.6f}\n"
+                                f"<b>Порог:</b> {self.threshold}\n"
+                                f"<b>Проверка:</b> {format_interval(self.interval_value, self.interval_unit)}\n"
+                                f"<b>Время:</b> {now.strftime('%d.%m.%Y %H:%M:%S')}"
+                            )
                             
                             keyboard = {"inline_keyboard": [[
                                 {"text": "⏸ Пауза", "callback_data": f"pause_{self.pair_id}"},
@@ -121,10 +179,11 @@ class PairMonitor:
                     self.next_check = self.get_next_check()
                 time.sleep(5)
             except Exception as e:
-                logging.error(f"Ошибка: {traceback.format_exc()}")
+                logging.error(f"Ошибка в цикле: {traceback.format_exc()}")
                 time.sleep(10)
     
     def start(self):
+        """Запускает мониторинг"""
         self.running = True
         self.next_check = self.get_next_check()
         self.thread = threading.Thread(target=self.check_loop)
@@ -133,14 +192,18 @@ class PairMonitor:
         logging.info(f"▶️ Запущен {self.symbol1}/{self.symbol2}")
     
     def stop(self):
+        """Останавливает мониторинг"""
         self.running = False
-        if self.thread: self.thread.join(timeout=1)
+        if self.thread:
+            self.thread.join(timeout=1)
         logging.info(f"⏹ Остановлен {self.symbol1}/{self.symbol2}")
     
     def pause(self):
+        """Ставит на паузу"""
         self.running = False
         logging.info(f"⏸ Пауза для {self.symbol1}/{self.symbol2}")
 
+# ===== FLASK ЭНДПОИНТЫ =====
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -155,9 +218,13 @@ def get_pairs(chat_id):
     if chat_id in monitors:
         for p in monitors[chat_id]:
             pairs.append({
-                'id': p.pair_id, 'symbol1': p.symbol1, 'symbol2': p.symbol2,
-                'threshold': p.threshold, 'interval_value': p.interval_value,
-                'interval_unit': p.interval_unit, 'active': p.running,
+                'id': p.pair_id,
+                'symbol1': p.symbol1,
+                'symbol2': p.symbol2,
+                'threshold': p.threshold,
+                'interval_value': p.interval_value,
+                'interval_unit': p.interval_unit,
+                'active': p.running,
                 'last_ratio': p.last_ratio
             })
     return jsonify({'pairs': pairs})
@@ -195,6 +262,7 @@ def add_pair():
         
         return jsonify({'success': True})
     except Exception as e:
+        logging.error(f"Ошибка: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/remove_pair', methods=['POST'])
@@ -216,8 +284,9 @@ def toggle_pair():
     pair_id = data.get('pairId')
     if chat_id in monitors and 0 <= pair_id < len(monitors[chat_id]):
         m = monitors[chat_id][pair_id]
-        if m.running: m.pause()
-        else: 
+        if m.running:
+            m.pause()
+        else:
             m.running = True
             m.start()
     return jsonify({'success': True})
@@ -231,10 +300,22 @@ def stop_all():
             p.stop()
     return jsonify({'success': True})
 
+@app.route('/api/log_chat', methods=['POST'])
+def log_chat():
+    data = request.json
+    chat_id = data.get('chatId')
+    logging.info(f"📱 WebApp передал Chat ID: {chat_id}")
+    return jsonify({'ok': True})
+
+# ===== ОБРАБОТЧИКИ TELEGRAM =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = [[InlineKeyboardButton("🚀 Открыть Monitor", web_app=WebAppInfo(url=RENDER_URL))],
-                [InlineKeyboardButton("📊 Мои пары", callback_data='list_pairs'),
-                 InlineKeyboardButton("⏹ Стоп все", callback_data='stop_all')]]
+    keyboard = [[
+        InlineKeyboardButton("🚀 Открыть Monitor", web_app=WebAppInfo(url=RENDER_URL))
+    ]]
+    keyboard.append([
+        InlineKeyboardButton("📊 Мои пары", callback_data='list_pairs'),
+        InlineKeyboardButton("⏹ Стоп все", callback_data='stop_all')
+    ])
     await update.message.reply_text(
         f"👋 Привет, {update.effective_user.first_name}!\n\n⬇️ Нажми кнопку ниже",
         reply_markup=InlineKeyboardMarkup(keyboard))
@@ -256,7 +337,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("📭 Нет активных пар")
     elif query.data == 'stop_all':
         if chat_id in monitors:
-            for p in monitors[chat_id]: p.stop()
+            for p in monitors[chat_id]:
+                p.stop()
         await query.edit_message_text("⏹ Все мониторы остановлены")
     elif query.data.startswith('pause_'):
         pair_id = int(query.data.split('_')[1])
@@ -269,27 +351,43 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             monitors[chat_id][pair_id].stop()
             await query.edit_message_text("⏹ Остановлен")
 
+async def error_handler(update, context):
+    logging.error(f"Ошибка: {context.error}")
+
+# ===== ЗАПУСК =====
 def run_flask():
     app.run(host='0.0.0.0', port=PORT)
 
 async def main():
     global bot_app
-    logging.info("🚀 Запуск...")    
-    # ПРИНУДИТЕЛЬНО сбрасываем вебхук
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook?drop_pending_updates=true"
-    requests.get(url)
-    logging.info("✅ Вебхук сброшен")
+    logging.info("🚀 Запуск...")
+
+    # Создаем приложение бота
     bot_app = Application.builder().token(BOT_TOKEN).build()
+    
+    # Добавляем обработчики
     bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CommandHandler("start", start_command))  # Дублируем для надежности
     bot_app.add_handler(CallbackQueryHandler(button_handler))
+    bot_app.add_error_handler(error_handler)
+
+    # Инициализируем и запускаем бота
     await bot_app.initialize()
     await bot_app.start()
-    await bot_app.bot.set_webhook(url=f"{RENDER_URL}/webhook", allowed_updates=Update.ALL_TYPES)
-    logging.info(f"✅ Вебхук установлен")
+    
+    # Устанавливаем вебхук
+    webhook_url = f"{RENDER_URL}/webhook"
+    await bot_app.bot.set_webhook(url=webhook_url, allowed_updates=Update.ALL_TYPES)
+    logging.info(f"✅ Вебхук установлен на {webhook_url}")
+
+    # Запускаем Flask в отдельном потоке
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
-    while True: await asyncio.sleep(3600)
+    
+    # Держим приложение запущенным
+    while True:
+        await asyncio.sleep(3600)
 
 if __name__ == "__main__":
     asyncio.run(main())
