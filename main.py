@@ -238,6 +238,7 @@ def add_pair():
     try:
         data = request.json
         chat_id = data.get('chatId')
+        logging.info(f"🔥🔥🔥 add_pair получил chat_id: {chat_id}")
         s1 = data.get('symbol1', '').lower().strip()
         s2 = data.get('symbol2', '').lower().strip()
         th = float(data.get('threshold', 0))
