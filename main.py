@@ -50,6 +50,7 @@ def polling():
             if data['ok'] and data['result']:
                 for update in data['result']:
                     offset = update['update_id'] + 1
+                    logging.info(f"🔥 Получен update: {update['update_id']}")
 
                     if 'message' in update:
                         chat_id = update['message']['chat']['id']
@@ -102,7 +103,7 @@ def validate_symbol(symbol):
             data = r.json()
             return data['retCode'] == 0 and len(data['result']['list']) > 0
     except:
-        pass
+        return False
     return False
 
 def format_interval(value, unit):
@@ -316,10 +317,13 @@ def health():
 
 # ===== ЗАПУСК =====
 if __name__ == "__main__":
+    # Сбрасываем вебхук
     requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/deleteWebhook?drop_pending_updates=true")
     logging.info("✅ Вебхук сброшен")
 
+    # Запускаем polling
     threading.Thread(target=polling, daemon=True).start()
     logging.info("✅ Polling запущен")
 
+    # Запускаем Flask
     app.run(host='0.0.0.0', port=PORT)
