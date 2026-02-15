@@ -101,6 +101,7 @@
             text-align: left;
             padding: 0;
             font-size: 14px;
+            cursor: pointer;
         }
         .alert.error {
             background: #f38ba8;
@@ -184,17 +185,17 @@
             <div class="card">
                 <div class="card-title">📈 Новая пара</div>
                 <div id="formError" class="alert error" style="display: none;"></div>
-                
+
                 <div class="form-group">
                     <div class="form-label">Первый тикер</div>
                     <input type="text" id="symbol1" placeholder="например: paxgusdt">
                 </div>
-                
+
                 <div class="form-group">
                     <div class="form-label">Второй тикер</div>
                     <input type="text" id="symbol2" placeholder="например: xautusdt">
                 </div>
-                
+
                 <div class="form-group">
                     <div class="form-label">Порог</div>
                     <input type="number" id="threshold" step="0.0001" value="1.0048" placeholder="1.0048">
@@ -213,7 +214,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <button onclick="addPair()">✅ Сохранить</button>
             </div>
         </div>
@@ -288,7 +289,7 @@
                 const res = await fetch(`/api/pairs/${chatId}`);
                 const data = await res.json();
                 const container = document.getElementById('pairsContainer');
-                
+
                 if (!data.pairs || data.pairs.length === 0) {
                     container.innerHTML = '<div class="empty-state">📭 Нет сохраненных пар</div>';
                     return;
@@ -348,16 +349,33 @@
         }
 
         async function removePair(pairId) {
-            if (!tg || confirm('Удалить пару?')) {
-                try {
-                    await fetch('/api/remove_pair', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({chatId, pairId})
-                    });
-                    await loadPairs();
-                } catch (e) {
-                    showError('Ошибка: ' + e);
+            if (tg) {
+                tg.showConfirm('Удалить пару?', async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            await fetch('/api/remove_pair', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({chatId, pairId})
+                            });
+                            await loadPairs();
+                        } catch (e) {
+                            showError('Ошибка: ' + e);
+                        }
+                    }
+                });
+            } else {
+                if (confirm('Удалить пару?')) {
+                    try {
+                        await fetch('/api/remove_pair', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({chatId, pairId})
+                        });
+                        await loadPairs();
+                    } catch (e) {
+                        showError('Ошибка: ' + e);
+                    }
                 }
             }
         }
@@ -376,16 +394,33 @@
         }
 
         async function stopAll() {
-            if (!tg || confirm('Остановить все мониторы?')) {
-                try {
-                    await fetch('/api/stop_all', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({chatId})
-                    });
-                    if (tg) tg.showAlert('⏹ Все остановлено');
-                } catch (e) {
-                    showError('Ошибка: ' + e);
+            if (tg) {
+                tg.showConfirm('Остановить все мониторы?', async (confirmed) => {
+                    if (confirmed) {
+                        try {
+                            await fetch('/api/stop_all', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({chatId})
+                            });
+                            tg.showAlert('⏹ Все остановлено');
+                        } catch (e) {
+                            showError('Ошибка: ' + e);
+                        }
+                    }
+                });
+            } else {
+                if (confirm('Остановить все мониторы?')) {
+                    try {
+                        await fetch('/api/stop_all', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({chatId})
+                        });
+                        alert('⏹ Все остановлено');
+                    } catch (e) {
+                        showError('Ошибка: ' + e);
+                    }
                 }
             }
         }
