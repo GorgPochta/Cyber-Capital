@@ -112,43 +112,44 @@
             margin-bottom: 16px;
         }
         
-        /* ===== НОВЫЙ ДИЗАЙН ДЛЯ СПИСКА ПАР ===== */
+        /* ===== ИСПРАВЛЕННЫЙ ДИЗАЙН ДЛЯ СПИСКА ПАР ===== */
         .pair-item {
             background: #313244;
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 12px;
             border: 1px solid #45475a;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
         }
-
-        /* Верхняя строка: статус и название */
-        .pair-row-top {
+        
+        /* Верхняя строка: статус, название и бейдж */
+        .pair-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-bottom: 12px;
             width: 100%;
         }
-
+        
         .pair-name {
             font-weight: 600;
-            font-size: 16px;
+            font-size: 15px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            background: #1e1e2e;
+            padding: 4px 12px;
+            border-radius: 20px;
         }
-
+        
         .pair-status {
             background: #1e1e2e;
-            padding: 4px 10px;
+            padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
             color: #a6adc8;
         }
-
-        /* Вторая строка: параметры */
+        
+        /* Средняя строка: параметры в ряд */
         .pair-params {
             display: flex;
             align-items: center;
@@ -156,9 +157,10 @@
             background: #1e1e2e;
             padding: 10px 12px;
             border-radius: 12px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
         }
-
+        
         .param-item {
             display: flex;
             align-items: center;
@@ -166,19 +168,18 @@
             font-size: 13px;
             color: #a6adc8;
         }
-
+        
         .param-value {
             color: #89b4fa;
             font-weight: 500;
         }
-
-        /* Третья строка: кнопка удаления */
+        
+        /* Нижняя строка: кнопка удаления */
         .pair-actions {
             display: flex;
             justify-content: flex-end;
-            width: 100%;
         }
-
+        
         .delete-button {
             background: #f38ba8;
             color: #1e1e2e;
@@ -191,17 +192,15 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
             width: auto;
             min-width: 100px;
             justify-content: center;
         }
-
+        
         .delete-button:hover {
             background: #ff9eb0;
-            transform: scale(1.02);
         }
-
+        
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -341,7 +340,7 @@
 
                 container.innerHTML = data.pairs.map(p => `
                     <div class="pair-item">
-                        <div class="pair-row-top">
+                        <div class="pair-header">
                             <div class="pair-name">
                                 <span>${p.active ? '🟢' : '🔴'}</span>
                                 <span>${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}</span>
@@ -437,7 +436,6 @@
             }
         }
 
-        // Функция togglePair больше не нужна, но оставим для совместимости
         async function togglePair(pairId) {}
 
         async function stopAll() {
