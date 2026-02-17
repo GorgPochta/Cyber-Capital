@@ -111,93 +111,97 @@
             border-radius: 8px;
             margin-bottom: 16px;
         }
-        /* ===== НОВЫЙ, КОМПАКТНЫЙ ДИЗАЙН ДЛЯ СПИСКА ПАР ===== */
+        
+        /* ===== НОВЫЙ ДИЗАЙН ДЛЯ СПИСКА ПАР ===== */
         .pair-item {
             background: #313244;
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 12px;
             border: 1px solid #45475a;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-        /* Верхняя строка: статус, название и порог */
-        .pair-header {
+
+        /* Верхняя строка: статус и название */
+        .pair-row-top {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            width: 100%;
         }
+
         .pair-name {
             font-weight: 600;
             font-size: 16px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+        }
+
+        .pair-status {
             background: #1e1e2e;
             padding: 4px 10px;
             border-radius: 20px;
-        }
-        .pair-badge {
-            background: #45475a;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 11px;
+            font-size: 12px;
             color: #a6adc8;
         }
-        .pair-threshold {
-            background: #1e1e2e;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 13px;
-            color: #89b4fa;
-            font-weight: 500;
-            margin-left: auto;
-        }
-        /* Средняя строка: интервал и последнее значение */
-        .pair-details {
-            display: flex;
-            gap: 16px;
-            font-size: 13px;
-            color: #a6adc8;
-            margin-bottom: 12px;
-            background: #1e1e2e;
-            padding: 8px 12px;
-            border-radius: 12px;
-        }
-        .pair-details span {
+
+        /* Вторая строка: параметры */
+        .pair-params {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 16px;
+            background: #1e1e2e;
+            padding: 10px 12px;
+            border-radius: 12px;
+            flex-wrap: wrap;
         }
-        /* Нижняя строка: кнопка удаления */
+
+        .param-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #a6adc8;
+        }
+
+        .param-value {
+            color: #89b4fa;
+            font-weight: 500;
+        }
+
+        /* Третья строка: кнопка удаления */
         .pair-actions {
             display: flex;
-            gap: 8px;
             justify-content: flex-end;
+            width: 100%;
         }
+
         .delete-button {
             background: #f38ba8;
             color: #1e1e2e;
             border: none;
-            border-radius: 20px;
-            padding: 8px 16px;
+            border-radius: 30px;
+            padding: 8px 20px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             transition: all 0.2s;
             width: auto;
-            margin: 0;
+            min-width: 100px;
+            justify-content: center;
         }
+
         .delete-button:hover {
             background: #ff9eb0;
             transform: scale(1.02);
         }
-        .delete-button span {
-            font-size: 16px;
-        }
+
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -337,17 +341,29 @@
 
                 container.innerHTML = data.pairs.map(p => `
                     <div class="pair-item">
-                        <div class="pair-header">
-                            <span class="pair-name">
-                                ${p.active ? '🟢' : '🔴'} ${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}
-                                <span class="pair-badge">${p.active ? 'Активна' : 'Остановлена'}</span>
-                            </span>
-                            <span class="pair-threshold">🎯 ${p.threshold}</span>
+                        <div class="pair-row-top">
+                            <div class="pair-name">
+                                <span>${p.active ? '🟢' : '🔴'}</span>
+                                <span>${p.symbol1.toUpperCase()}/${p.symbol2.toUpperCase()}</span>
+                            </div>
+                            <div class="pair-status">${p.active ? 'Активна' : 'Остановлена'}</div>
                         </div>
-                        <div class="pair-details">
-                            <span>⏱ ${formatInterval(p.interval_value, p.interval_unit)}</span>
-                            <span>📊 ${p.last_ratio?.toFixed(6) || '—'}</span>
+                        
+                        <div class="pair-params">
+                            <div class="param-item">
+                                <span>🎯</span>
+                                <span class="param-value">${p.threshold}</span>
+                            </div>
+                            <div class="param-item">
+                                <span>⏱</span>
+                                <span class="param-value">${formatInterval(p.interval_value, p.interval_unit)}</span>
+                            </div>
+                            <div class="param-item">
+                                <span>📊</span>
+                                <span class="param-value">${p.last_ratio?.toFixed(6) || '—'}</span>
+                            </div>
                         </div>
+                        
                         <div class="pair-actions">
                             <button class="delete-button" onclick="removePair(${p.id})">
                                 <span>🗑️</span> Удалить
@@ -421,10 +437,8 @@
             }
         }
 
-        // Функция togglePair больше не нужна, оставляем пустой для обратной совместимости
-        async function togglePair(pairId) {
-            // Ничего не делаем
-        }
+        // Функция togglePair больше не нужна, но оставим для совместимости
+        async function togglePair(pairId) {}
 
         async function stopAll() {
             if (tg) {
